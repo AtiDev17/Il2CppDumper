@@ -76,8 +76,9 @@ def set_params(addr, sig):
 				skip_parse += 1
 				return
 			pt = _resolve_type(' '.join(ws[:-1]))
-			if pt is None:
-				skip_resolve += 1
+			if pt is None or pt == _VOID:
+				if pt is None:
+					skip_resolve += 1
 				return
 			pds.append(ParameterDefinitionImpl(ws[-1], pt, None))
 	if not pds:

@@ -3,10 +3,8 @@ import json
 import sys
 import traceback
 from ghidra.program.model.symbol import SourceType
-from ghidra.program.model.data import TypedefDataType, IntegerDataType, UnsignedIntegerDataType, LongLongDataType, UnsignedLongLongDataType, ShortDataType, UnsignedShortDataType, CharDataType, UnsignedCharDataType, DataTypeConflictHandler, CategoryPath, StructureDataType, FunctionDefinitionDataType, ParameterDefinitionImpl
-from ghidra.program.model.listing import ParameterImpl, Function
+from ghidra.program.model.data import TypedefDataType, IntegerDataType, UnsignedIntegerDataType, LongLongDataType, UnsignedLongLongDataType, ShortDataType, UnsignedShortDataType, CharDataType, UnsignedCharDataType, DataTypeConflictHandler, CategoryPath, StructureDataType
 from ghidra.program.model.util import CodeUnitInsertionException
-from java.util import ArrayList as JArrayList
 
 try:
 	from ghidra.program.model.data import VoidDataType
@@ -128,7 +126,8 @@ def import_needed_types(data):
 		sig_decl = sig[:idx]
 		parts = sig_decl.split()
 		if len(parts) > 1:
-			rt = ' '.join(parts[:-1]).rstrip('*').strip()
+			rt_parts = [x for x in parts[:-1] if x != 'const']
+			rt = ' '.join(rt_parts).rstrip('*').strip()
 			if rt and rt not in ('void', 'bool'):
 				needed.add(rt)
 		pm = sig[idx+1:].rsplit(')', 1)[0]
@@ -270,27 +269,25 @@ def set_sig(addr, name, sig):
 			return
 
 		ps = sig[paren+1:].rsplit(')', 1)[0]
-		pds = []
+
+		# Parse params (best effort — don't skip return type on failure)
 		if ps.strip() and ps.strip() != 'void':
 			for p in [x.strip() for x in ps.split(',') if x.strip()]:
 				ws = p.split()
 				if len(ws) < 2:
 					skip_param_parse += 1
-					sig_skip += 1
 					if skip_param_parse <= 3:
 						print("  [skip_param_parse] p='%s' ws=%s" % (p, ws))
-					return
+					break
 				pt = _resolve_type(dtm, ' '.join(ws[:-1]))
-				if pt is None:
-					skip_param_type += 1
-					sig_skip += 1
-					if skip_param_type <= 3:
-						print("  [skip_param_type] name=%s param='%s'" % (name, ' '.join(ws[:-1])))
-					return
-				pds.append(ParameterDefinitionImpl(ws[-1], pt, None))
+				if pt is None or pt == _VOID:
+					if pt is None:
+						skip_param_type += 1
+						if skip_param_type <= 3:
+							print("  [skip_param_type] name=%s param='%s'" % (name, ' '.join(ws[:-1])))
+					break
 
-		if rt is not None:
-			func.setReturnType(rt, SourceType.USER_DEFINED)
+		func.setReturnType(rt, SourceType.USER_DEFINED)
 		sig_ok += 1
 	except:
 		skip_exception += 1
@@ -386,6 +383,7 @@ if "ScriptMethod" in data and "ScriptMethod" in processFields:
 		if monitor.isCancelled(): break
 
 print('Script finished! OK=%d SKIP=%d' % (sig_ok, sig_skip))
-print('  skip breakdown: no_paren=%d no_func=%d decl_parse=%d ret_type=%d param_parse=%d param_type=%d exception=%d' % (
+print('  skip breakdown: no_paren=%d no_func=%d decl_parse=%d ret_type=%d exception=%d' % (
 	skip_no_paren, skip_no_func, skip_decl_parse, skip_ret_type,
-	skip_param_parse, skip_param_type, skip_exception))
+	skip_exception))
+print('  param issues (return type still set): parse=%d type=%d' % (skip_param_parse, skip_param_type))
