@@ -1,6 +1,6 @@
 ﻿namespace Il2CppDumper
 {
-    public class Elf32_Ehdr
+    internal sealed class Elf32_Ehdr
     {
         public uint ei_mag;
         public byte ei_class;
@@ -25,7 +25,7 @@
         public ushort e_shstrndx;
     }
 
-    public class Elf32_Phdr
+    internal sealed class Elf32_Phdr
     {
         public uint p_type;
         public uint p_offset;
@@ -37,7 +37,7 @@
         public uint p_align;
     }
 
-    public class Elf32_Shdr
+    internal sealed class Elf32_Shdr
     {
         public uint sh_name;
         public uint sh_type;
@@ -51,7 +51,7 @@
         public uint sh_entsize;
     }
 
-    public class Elf32_Sym
+    internal sealed class Elf32_Sym
     {
         public uint st_name;
         public uint st_value;
@@ -61,19 +61,19 @@
         public ushort st_shndx;
     }
 
-    public class Elf32_Dyn
+    internal sealed class Elf32_Dyn
     {
         public int d_tag;
         public uint d_un;
     }
 
-    public class Elf32_Rel
+    internal sealed class Elf32_Rel
     {
         public uint r_offset;
         public uint r_info;
     }
 
-    public class Elf64_Ehdr
+    internal sealed class Elf64_Ehdr
     {
         public uint ei_mag;
         public byte ei_class;
@@ -98,7 +98,7 @@
         public ushort e_shstrndx;
     }
 
-    public class Elf64_Phdr
+    internal sealed class Elf64_Phdr
     {
         public uint p_type;
         public uint p_flags;
@@ -110,7 +110,7 @@
         public ulong p_align;
     }
 
-    public class Elf64_Shdr
+    internal sealed class Elf64_Shdr
     {
         public uint sh_name;
         public uint sh_type;
@@ -124,7 +124,7 @@
         public ulong sh_entsize;
     }
 
-    public class Elf64_Sym
+    internal sealed class Elf64_Sym
     {
         public uint st_name;
         public byte st_info;
@@ -134,20 +134,20 @@
         public ulong st_size;
     }
 
-    public class Elf64_Dyn
+    internal sealed class Elf64_Dyn
     {
         public long d_tag;
         public ulong d_un;
     }
 
-    public class Elf64_Rela
+    internal sealed class Elf64_Rela
     {
         public ulong r_offset;
         public ulong r_info;
         public ulong r_addend;
     }
 
-    public static class ElfConstants
+    internal static class ElfConstants
     {
         //e_machine
         public const int EM_386 = 3;

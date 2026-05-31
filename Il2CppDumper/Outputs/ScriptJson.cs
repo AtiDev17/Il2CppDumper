@@ -2,16 +2,16 @@
 
 namespace Il2CppDumper
 {
-    public class ScriptJson
+    internal sealed class ScriptJson
     {
-        public List<ScriptMethod> ScriptMethod = new();
-        public List<ScriptString> ScriptString = new();
-        public List<ScriptMetadata> ScriptMetadata = new();
-        public List<ScriptMetadataMethod> ScriptMetadataMethod = new();
+        public List<ScriptMethod> ScriptMethod = [];
+        public List<ScriptString> ScriptString = [];
+        public List<ScriptMetadata> ScriptMetadata = [];
+        public List<ScriptMetadataMethod> ScriptMetadataMethod = [];
         public ulong[] Addresses;
     }
 
-    public class ScriptMethod
+    internal sealed class ScriptMethod
     {
         public ulong Address;
         public string Name;
@@ -19,20 +19,20 @@ namespace Il2CppDumper
         public string TypeSignature;
     }
 
-    public class ScriptString
+    internal sealed class ScriptString
     {
         public ulong Address;
         public string Value;
     }
 
-    public class ScriptMetadata
+    internal sealed class ScriptMetadata
     {
         public ulong Address;
         public string Name;
         public string Signature;
     }
 
-    public class ScriptMetadataMethod
+    internal sealed class ScriptMetadataMethod
     {
         public ulong Address;
         public string Name;

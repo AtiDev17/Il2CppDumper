@@ -1,17 +1,18 @@
 ﻿using System;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 
 namespace Il2CppDumper
 {
-    public class Il2CppSectionMetadata
+    internal sealed class Il2CppSectionMetadata
     {
         public uint offset;
         public uint size;
         public uint count;
     }
 
-    public class Il2CppGlobalMetadataHeader
+    internal sealed class Il2CppGlobalMetadataHeader
     {
         public uint sanity;
         public int version;
@@ -225,7 +226,7 @@ namespace Il2CppDumper
         public Il2CppSectionMetadata exportedTypeDefinitions; // TypeDefinitionIndex
     }
 
-    public class Il2CppAssemblyDefinition
+    internal sealed class Il2CppAssemblyDefinition
     {
         public int imageIndex;
         [Version(Min = 24.1)]
@@ -241,7 +242,8 @@ namespace Il2CppDumper
         public Il2CppAssemblyNameDefinition aname;
     }
 
-    public class Il2CppAssemblyNameDefinition
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Microsoft.Performance", "CA1812")]
+    internal sealed class Il2CppAssemblyNameDefinition
     {
         public uint nameIndex;
         public uint cultureIndex;
@@ -259,7 +261,7 @@ namespace Il2CppDumper
         public byte[] public_key_token;
     }
 
-    public class Il2CppImageDefinition
+    internal sealed class Il2CppImageDefinition
     {
         public uint nameIndex;
         public int assemblyIndex;
@@ -282,7 +284,7 @@ namespace Il2CppDumper
         public uint customAttributeCount;
     }
 
-    public class Il2CppTypeDefinition
+    internal sealed class Il2CppTypeDefinition
     {
         public uint nameIndex;
         public uint namespaceIndex;
@@ -361,16 +363,11 @@ namespace Il2CppDumper
             }
             var versionAttribute = versionAttributes[0];
 
-            if (versionAttribute.Min <= version && version <= versionAttribute.Max)
-            {
-                return elementTypeIndex;
-            }
-
-            return parentIndex;
+            return versionAttribute.Min <= version && version <= versionAttribute.Max ? elementTypeIndex : parentIndex;
         }
     }
 
-    public class Il2CppMethodDefinition
+    internal sealed class Il2CppMethodDefinition
     {
         public uint nameIndex;
         public TypeDefinitionIndex declaringType;
@@ -398,7 +395,7 @@ namespace Il2CppDumper
         public ushort parameterCount;
     }
 
-    public class Il2CppParameterDefinition
+    internal sealed class Il2CppParameterDefinition
     {
         public uint nameIndex;
         public uint token;
@@ -407,7 +404,7 @@ namespace Il2CppDumper
         public TypeIndex typeIndex;
     }
 
-    public class Il2CppFieldDefinition
+    internal sealed class Il2CppFieldDefinition
     {
         public uint nameIndex;
         public TypeIndex typeIndex;
@@ -417,14 +414,14 @@ namespace Il2CppDumper
         public uint token;
     }
 
-    public class Il2CppFieldDefaultValue
+    internal sealed class Il2CppFieldDefaultValue
     {
         public int fieldIndex;
         public TypeIndex typeIndex;
         public int dataIndex;
     }
 
-    public class Il2CppPropertyDefinition
+    internal sealed class Il2CppPropertyDefinition
     {
         public uint nameIndex;
         public int get;
@@ -436,13 +433,13 @@ namespace Il2CppDumper
         public uint token;
     }
 
-    public class Il2CppInterfaceOffsetPair
+    internal sealed class Il2CppInterfaceOffsetPair
     {
         public TypeIndex interfaceTypeIndex;
         public int offset;
     }
 
-    public class Il2CppCustomAttributeTypeRange
+    internal sealed class Il2CppCustomAttributeTypeRange
     {
         [Version(Min = 24.1)]
         public uint token;
@@ -450,33 +447,33 @@ namespace Il2CppDumper
         public int count;
     }
 
-    public class Il2CppMetadataUsageList
+    internal sealed class Il2CppMetadataUsageList
     {
         public uint start;
         public uint count;
     }
 
-    public class Il2CppMetadataUsagePair
+    internal sealed class Il2CppMetadataUsagePair
     {
         public uint destinationIndex;
         public uint encodedSourceIndex;
     }
 
-    public class Il2CppStringLiteral
+    internal sealed class Il2CppStringLiteral
     {
         [Version(Max = 31)]
         public uint length;
         public int dataIndex;
     }
 
-    public class Il2CppParameterDefaultValue
+    internal sealed class Il2CppParameterDefaultValue
     {
         public ParameterIndex parameterIndex;
         public TypeIndex typeIndex;
         public int dataIndex;
     }
 
-    public class Il2CppEventDefinition
+    internal sealed class Il2CppEventDefinition
     {
         public uint nameIndex;
         public TypeIndex typeIndex;
@@ -489,7 +486,7 @@ namespace Il2CppDumper
         public uint token;
     }
 
-    public class Il2CppGenericContainer
+    internal sealed class Il2CppGenericContainer
     {
         /* index of the generic type definition or the generic method definition corresponding to this container */
         public int ownerIndex; // either index into Il2CppClass metadata array or Il2CppMethodDefinition array
@@ -500,13 +497,13 @@ namespace Il2CppDumper
         public int genericParameterStart;
     }
 
-    public class Il2CppFieldRef
+    internal sealed class Il2CppFieldRef
     {
         public TypeIndex typeIndex;
         public int fieldIndex; // local offset into type fields
     }
 
-    public class Il2CppGenericParameter
+    internal sealed class Il2CppGenericParameter
     {
         public GenericContainerIndex ownerIndex;  /* Type or method this parameter was defined in. */
         public uint nameIndex;
@@ -516,12 +513,12 @@ namespace Il2CppDumper
         public ushort flags;
     }
 
-    public class Il2CppConstraintIndex
+    internal sealed class Il2CppConstraintIndex
     {
         public TypeIndex index;
     }
 
-    public enum Il2CppRGCTXDataType
+    internal enum Il2CppRGCTXDataType
     {
         IL2CPP_RGCTX_DATA_INVALID,
         IL2CPP_RGCTX_DATA_TYPE,
@@ -531,14 +528,14 @@ namespace Il2CppDumper
         IL2CPP_RGCTX_DATA_CONSTRAINED,
     }
 
-    public class Il2CppRGCTXDefinitionData
+    internal sealed class Il2CppRGCTXDefinitionData
     {
         public int rgctxDataDummy;
         public int methodIndex => rgctxDataDummy;
         public int typeIndex => rgctxDataDummy;
     }
 
-    public class Il2CppRGCTXDefinition
+    internal sealed class Il2CppRGCTXDefinition
     {
         public Il2CppRGCTXDataType type => type_post29 == 0 ? (Il2CppRGCTXDataType)type_pre29 : (Il2CppRGCTXDataType)type_post29;
         [Version(Max = 27.1)]
@@ -551,7 +548,7 @@ namespace Il2CppDumper
         public ulong _data;
     }
 
-    public enum Il2CppMetadataUsage
+    internal enum Il2CppMetadataUsage
     {
         kIl2CppMetadataUsageInvalid,
         kIl2CppMetadataUsageTypeInfo,
@@ -562,67 +559,51 @@ namespace Il2CppDumper
         kIl2CppMetadataUsageMethodRef,
     };
 
-    public class Il2CppCustomAttributeDataRange
+    internal sealed class Il2CppCustomAttributeDataRange
     {
         public uint token;
         public uint startOffset;
     }
 
-    public interface ICustomType
-    {}
+    internal interface ICustomType
+    { }
 
-    public class TypeIndex : ICustomType
+    internal sealed class TypeIndex(int value) : ICustomType
     {
-        public int value;
-        public TypeIndex(int value)
-        {
-            this.value = value;
-        }
+        public int value = value;
         public static implicit operator int(TypeIndex type)
         {
             return type.value;
         }
-        public override string ToString() => value.ToString();
+        public override string ToString() => value.ToString(CultureInfo.InvariantCulture);
     }
 
-    public class TypeDefinitionIndex : ICustomType
+    internal sealed class TypeDefinitionIndex(int value) : ICustomType
     {
-        public int value;
-        public TypeDefinitionIndex(int value)
-        {
-            this.value = value;
-        }
+        public int value = value;
         public static implicit operator int(TypeDefinitionIndex typeDef)
         {
             return typeDef.value;
         }
-        public override string ToString() => value.ToString();
+        public override string ToString() => value.ToString(CultureInfo.InvariantCulture);
     }
 
-    public class GenericContainerIndex : ICustomType
+    internal sealed class GenericContainerIndex(int value) : ICustomType
     {
-        public int value;
-        public GenericContainerIndex(int value)
-        {
-            this.value = value;
-        }
+        public int value = value;
         public static implicit operator int(GenericContainerIndex genericContainer)
         {
             return genericContainer.value;
         }
-        public override string ToString() => value.ToString();
+        public override string ToString() => value.ToString(CultureInfo.InvariantCulture);
     }
-    public class ParameterIndex : ICustomType
+    internal sealed class ParameterIndex(int value) : ICustomType
     {
-        public int value;
-        public ParameterIndex(int value)
-        {
-            this.value = value;
-        }
+        public int value = value;
         public static implicit operator int(ParameterIndex parameter)
         {
             return parameter.value;
         }
-        public override string ToString() => value.ToString();
+        public override string ToString() => value.ToString(CultureInfo.InvariantCulture);
     }
 }

@@ -2,11 +2,8 @@
 
 namespace Il2CppDumper
 {
-    public class MyAssemblyResolver : AssemblyResolver
+    internal sealed class MyAssemblyResolver : AssemblyResolver
     {
-        public void Register(AssemblyDef assembly)
-        {
-            AddToCache(assembly);
-        }
+        public void Register(AssemblyDef assembly) => AddToCache(assembly);
     }
 }

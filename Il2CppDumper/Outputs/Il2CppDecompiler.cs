@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -7,20 +8,11 @@ using static Il2CppDumper.Il2CppConstants;
 
 namespace Il2CppDumper
 {
-    public class Il2CppDecompiler
+    internal sealed class Il2CppDecompiler(Il2CppExecutor executor)
     {
-        private readonly Il2CppExecutor executor;
-        private readonly Metadata metadata;
-        private readonly Il2Cpp il2Cpp;
-        private readonly Dictionary<Il2CppMethodDefinition, string> methodModifiers;
-
-        public Il2CppDecompiler(Il2CppExecutor il2CppExecutor)
-        {
-            executor = il2CppExecutor;
-            metadata = il2CppExecutor.metadata;
-            il2Cpp = il2CppExecutor.il2Cpp;
-            methodModifiers = new();
-        }
+        private readonly Metadata metadata = executor.metadata;
+        private readonly Il2Cpp il2Cpp = executor.il2Cpp;
+        private readonly Dictionary<Il2CppMethodDefinition, string> methodModifiers = [];
 
         public void Decompile(Config config, string outputDir)
         {
@@ -65,7 +57,9 @@ namespace Il2CppDumper
                             writer.Write(GetCustomAttribute(imageDef, typeDef.customAttributeIndex, typeDef.token));
                         }
                         if (config.DumpAttribute && (typeDef.flags & TYPE_ATTRIBUTE_SERIALIZABLE) != 0)
+                        {
                             writer.Write("[Serializable]\n");
+                        }
                         var visibility = typeDef.flags & TYPE_ATTRIBUTE_VISIBILITY_MASK;
                         switch (visibility)
                         {
@@ -87,29 +81,51 @@ namespace Il2CppDumper
                             case TYPE_ATTRIBUTE_NESTED_FAM_OR_ASSEM:
                                 writer.Write("protected internal ");
                                 break;
+                            default:
+                                break;
                         }
                         if ((typeDef.flags & TYPE_ATTRIBUTE_ABSTRACT) != 0 && (typeDef.flags & TYPE_ATTRIBUTE_SEALED) != 0)
+                        {
                             writer.Write("static ");
+                        }
                         else if ((typeDef.flags & TYPE_ATTRIBUTE_INTERFACE) == 0 && (typeDef.flags & TYPE_ATTRIBUTE_ABSTRACT) != 0)
+                        {
                             writer.Write("abstract ");
+                        }
                         else if (!typeDef.IsValueType && !typeDef.IsEnum && (typeDef.flags & TYPE_ATTRIBUTE_SEALED) != 0)
+                        {
                             writer.Write("sealed ");
+                        }
                         if ((typeDef.flags & TYPE_ATTRIBUTE_INTERFACE) != 0)
+                        {
                             writer.Write("interface ");
+                        }
                         else if (typeDef.IsEnum)
+                        {
                             writer.Write("enum ");
+                        }
                         else if (typeDef.IsValueType)
+                        {
                             writer.Write("struct ");
+                        }
                         else
+                        {
                             writer.Write("class ");
+                        }
                         var typeName = executor.GetTypeDefName(typeDef, false, true);
                         writer.Write($"{typeName}");
                         if (extends.Count > 0)
+                        {
                             writer.Write($" : {string.Join(", ", extends)}");
+                        }
                         if (config.DumpTypeDefIndex)
+                        {
                             writer.Write($" // TypeDefIndex: {typeDefIndex}\n{{");
+                        }
                         else
+                        {
                             writer.Write("\n{");
+                        }
                         //dump field
                         if (config.DumpField && typeDef.field_count > 0)
                         {
@@ -144,6 +160,8 @@ namespace Il2CppDumper
                                         break;
                                     case FIELD_ATTRIBUTE_FAM_OR_ASSEM:
                                         writer.Write("protected internal ");
+                                        break;
+                                    default:
                                         break;
                                 }
                                 if ((fieldType.attrs & FIELD_ATTRIBUTE_LITERAL) != 0)
@@ -193,9 +211,13 @@ namespace Il2CppDumper
                                     }
                                 }
                                 if (config.DumpFieldOffset && !isConst)
+                                {
                                     writer.Write("; // 0x{0:X}\n", il2Cpp.GetFieldOffsetFromIndex(typeDefIndex, i - typeDef.fieldStart, i, typeDef.IsValueType, isStatic));
+                                }
                                 else
+                                {
                                     writer.Write(";\n");
+                                }
                             }
                         }
                         //dump property
@@ -227,9 +249,13 @@ namespace Il2CppDumper
                                     writer.Write($"{executor.GetTypeName(propertyType, false, false)} {metadata.GetStringFromIndex(propertyDef.nameIndex)} {{ ");
                                 }
                                 if (propertyDef.get >= 0)
+                                {
                                     writer.Write("get; ");
+                                }
                                 if (propertyDef.set >= 0)
+                                {
                                     writer.Write("set; ");
+                                }
                                 writer.Write("}");
                                 writer.Write("\n");
                             }
@@ -385,7 +411,7 @@ namespace Il2CppDumper
                         writer.Write("}\n");
                     }
                 }
-                catch (Exception e)
+                catch (IOException e)
                 {
                     Console.WriteLine("ERROR: Some errors in dumping");
                     writer.Write("/*");
@@ -399,7 +425,9 @@ namespace Il2CppDumper
         public string GetCustomAttribute(Il2CppImageDefinition imageDef, int customAttributeIndex, uint token, string padding = "")
         {
             if (il2Cpp.Version < 21)
+            {
                 return string.Empty;
+            }
             var attributeIndex = metadata.GetCustomAttributeIndex(imageDef, customAttributeIndex, token);
             if (attributeIndex >= 0)
             {
@@ -412,7 +440,7 @@ namespace Il2CppDumper
                     for (var i = 0; i < attributeTypeRange.count; i++)
                     {
                         var typeIndex = metadata.attributeTypes[attributeTypeRange.start + i];
-                        sb.AppendFormat("{0}[{1}] // RVA: 0x{2:X} Offset: 0x{3:X} VA: 0x{4:X}\n",
+                        _ = sb.AppendFormat(CultureInfo.InvariantCulture, "{0}[{1}] // RVA: 0x{2:X} Offset: 0x{3:X} VA: 0x{4:X}\n",
                             padding,
                             executor.GetTypeName(il2Cpp.types[typeIndex], false, false),
                             fixedMethodPointer,
@@ -427,7 +455,7 @@ namespace Il2CppDumper
                     var endRange = metadata.attributeDataRanges[attributeIndex + 1];
                     metadata.Position = (il2Cpp.Version < 38 ? metadata.header.attributeDataOffset : metadata.header.attributeData.offset) + startRange.startOffset;
                     var buff = metadata.ReadBytes((int)(endRange.startOffset - startRange.startOffset));
-                    var reader = new CustomAttributeDataReader(executor, buff);
+                    using var reader = new CustomAttributeDataReader(executor, buff);
                     if (reader.Count == 0)
                     {
                         return string.Empty;
@@ -435,9 +463,9 @@ namespace Il2CppDumper
                     var sb = new StringBuilder();
                     for (var i = 0; i < reader.Count; i++)
                     {
-                        sb.Append(padding);
-                        sb.Append(reader.GetStringCustomAttributeData());
-                        sb.Append('\n');
+                        _ = sb.Append(padding);
+                        _ = sb.Append(reader.GetStringCustomAttributeData());
+                        _ = sb.Append('\n');
                     }
                     return sb.ToString();
                 }
@@ -451,7 +479,9 @@ namespace Il2CppDumper
         public string GetModifiers(Il2CppMethodDefinition methodDef)
         {
             if (methodModifiers.TryGetValue(methodDef, out string str))
+            {
                 return str;
+            }
             var access = methodDef.flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK;
             switch (access)
             {
@@ -471,29 +501,43 @@ namespace Il2CppDumper
                 case METHOD_ATTRIBUTE_FAM_OR_ASSEM:
                     str += "protected internal ";
                     break;
+                default:
+                    break;
             }
             if ((methodDef.flags & METHOD_ATTRIBUTE_STATIC) != 0)
+            {
                 str += "static ";
+            }
             if ((methodDef.flags & METHOD_ATTRIBUTE_ABSTRACT) != 0)
             {
                 str += "abstract ";
                 if ((methodDef.flags & METHOD_ATTRIBUTE_VTABLE_LAYOUT_MASK) == METHOD_ATTRIBUTE_REUSE_SLOT)
+                {
                     str += "override ";
+                }
             }
             else if ((methodDef.flags & METHOD_ATTRIBUTE_FINAL) != 0)
             {
                 if ((methodDef.flags & METHOD_ATTRIBUTE_VTABLE_LAYOUT_MASK) == METHOD_ATTRIBUTE_REUSE_SLOT)
+                {
                     str += "sealed override ";
+                }
             }
             else if ((methodDef.flags & METHOD_ATTRIBUTE_VIRTUAL) != 0)
             {
                 if ((methodDef.flags & METHOD_ATTRIBUTE_VTABLE_LAYOUT_MASK) == METHOD_ATTRIBUTE_NEW_SLOT)
+                {
                     str += "virtual ";
+                }
                 else
+                {
                     str += "override ";
+                }
             }
             if ((methodDef.flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) != 0)
+            {
                 str += "extern ";
+            }
             methodModifiers.Add(methodDef, str);
             return str;
         }

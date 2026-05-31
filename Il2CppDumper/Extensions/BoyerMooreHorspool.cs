@@ -3,19 +3,13 @@ using System.Collections.Generic;
 
 namespace Il2CppDumper
 {
-    static class BoyerMooreHorspool
+    internal static class BoyerMooreHorspool
     {
         public static IEnumerable<int> Search(this byte[] source, byte[] pattern)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
-            if (pattern == null)
-            {
-                throw new ArgumentNullException(nameof(pattern));
-            }
+            ArgumentNullException.ThrowIfNull(pattern);
 
             int valueLength = source.Length;
             int patternLength = pattern.Length;
@@ -58,15 +52,9 @@ namespace Il2CppDumper
 
         public static IEnumerable<int> Search(this byte[] source, string stringPattern)
         {
-            if (source == null)
-            {
-                throw new ArgumentNullException(nameof(source));
-            }
+            ArgumentNullException.ThrowIfNull(source);
 
-            if (stringPattern == null)
-            {
-                throw new ArgumentNullException(nameof(stringPattern));
-            }
+            ArgumentNullException.ThrowIfNull(stringPattern);
 
             var pattern = stringPattern.Split(' ');
 

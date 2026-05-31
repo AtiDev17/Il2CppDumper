@@ -3,15 +3,18 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <Version>6.7.47</Version>
-    <AssemblyVersion>6.7.47.0</AssemblyVersion>
-    <FileVersion>6.7.47.0</FileVersion>
+    <Version>1.1.0</Version>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
     <Copyright>Copyright © Perfare 2016-2026</Copyright>
     <DebugType>embedded</DebugType>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisLevel>latest-all</AnalysisLevel>
+    <NoWarn>$(NoWarn);CA1303;CA5392;IDE0008;IDE0010;IDE0011;IDE0021;IDE0022;IDE0023;IDE0045;IDE0046;IDE0072;IDE0078;IDE0130;IDE0305;IDE1006</NoWarn>
+    <!-- CA1303: Console app, no localization needed. CA5392: .NET 10 doesn't support DllImport calling convention fix.
+         IDE0xxx: Subjective style rules (var vs explicit type, braces, expression bodies, namespace structure, naming). -->
   </PropertyGroup>
 
   <ItemGroup>

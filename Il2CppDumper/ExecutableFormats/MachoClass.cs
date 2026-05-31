@@ -1,6 +1,6 @@
 ﻿namespace Il2CppDumper
 {
-    public class MachoSection
+    internal sealed class MachoSection
     {
         public string sectname;
         public uint addr;
@@ -9,7 +9,7 @@
         public uint flags;
     }
 
-    public class MachoSection64Bit
+    internal sealed class MachoSection64Bit
     {
         public string sectname;
         public ulong addr;
@@ -18,7 +18,7 @@
         public uint flags;
     }
 
-    public class Fat
+    internal sealed class Fat
     {
         public uint offset;
         public uint size;

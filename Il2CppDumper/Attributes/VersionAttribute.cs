@@ -3,9 +3,9 @@
 namespace Il2CppDumper
 {
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
-    class VersionAttribute : Attribute
+    internal sealed class VersionAttribute : Attribute
     {
-        public double Min { get; set; } = 0;
+        public double Min { get; set; }
         public double Max { get; set; } = double.MaxValue;
     }
 }

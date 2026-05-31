@@ -2,7 +2,7 @@
 
 namespace Il2CppDumper
 {
-    public sealed class WebAssemblyMemory : Il2Cpp
+    internal sealed class WebAssemblyMemory : Il2Cpp
     {
         private readonly uint bssStart;
 
@@ -12,15 +12,9 @@ namespace Il2CppDumper
             this.bssStart = bssStart;
         }
 
-        public override ulong MapVATR(ulong addr)
-        {
-            return addr;
-        }
+        public override ulong MapVATR(ulong addr) => addr;
 
-        public override ulong MapRTVA(ulong addr)
-        {
-            return addr;
-        }
+        public override ulong MapRTVA(ulong addr) => addr;
 
         public override bool PlusSearch(int methodCount, int typeDefinitionsCount, int imageCount)
         {
@@ -30,15 +24,9 @@ namespace Il2CppDumper
             return AutoPlusInit(codeRegistration, metadataRegistration);
         }
 
-        public override bool Search()
-        {
-            return false;
-        }
+        public override bool Search() => false;
 
-        public override bool SymbolSearch()
-        {
-            return false;
-        }
+        public override bool SymbolSearch() => false;
 
         public override SectionHelper GetSectionHelper(int methodCount, int typeDefinitionsCount, int imageCount)
         {

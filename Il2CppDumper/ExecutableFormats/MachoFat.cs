@@ -3,7 +3,7 @@ using System.IO;
 
 namespace Il2CppDumper
 {
-    public sealed class MachoFat : BinaryStream
+    internal sealed class MachoFat : BinaryStream
     {
         public Fat[] fats;
 

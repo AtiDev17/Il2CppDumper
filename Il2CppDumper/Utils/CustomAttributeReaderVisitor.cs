@@ -1,6 +1,6 @@
 ﻿namespace Il2CppDumper
 {
-    public class CustomAttributeReaderVisitor
+    internal sealed class CustomAttributeReaderVisitor
     {
         public int CtorIndex;
         public AttributeArgument[] Arguments;

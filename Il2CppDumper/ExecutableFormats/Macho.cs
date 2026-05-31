@@ -7,11 +7,11 @@ using static Il2CppDumper.ArmUtils;
 
 namespace Il2CppDumper
 {
-    public sealed class Macho : Il2Cpp
+    internal sealed class Macho : Il2Cpp
     {
-        private static readonly byte[] FeatureBytes1 = { 0x0, 0x22 };//MOVS R2, #0
-        private static readonly byte[] FeatureBytes2 = { 0x78, 0x44, 0x79, 0x44 };//ADD R0, PC and ADD R1, PC
-        private readonly List<MachoSection> sections = new();
+        private static readonly byte[] FeatureBytes1 = [0x0, 0x22];//MOVS R2, #0
+        private static readonly byte[] FeatureBytes2 = [0x78, 0x44, 0x79, 0x44];//ADD R0, PC and ADD R1, PC
+        private readonly List<MachoSection> sections = [];
         private readonly ulong vmaddr;
 
         public Macho(Stream stream) : base(stream)
@@ -62,6 +62,8 @@ namespace Il2CppDumper
                             Console.WriteLine("ERROR: This Mach-O executable is encrypted and cannot be processed.");
                         }
                         break;
+                    default:
+                        break;
                 }
                 Position = pos + cmdsize;//next
             }
@@ -70,28 +72,20 @@ namespace Il2CppDumper
         public override void Init(ulong codeRegistration, ulong metadataRegistration)
         {
             base.Init(codeRegistration, metadataRegistration);
-            methodPointers = methodPointers.Select(x => x - 1).ToArray();
-            customAttributeGenerators = customAttributeGenerators.Select(x => x - 1).ToArray();
+            methodPointers = [.. methodPointers.Select(x => x - 1)];
+            customAttributeGenerators = [.. customAttributeGenerators.Select(x => x - 1)];
         }
 
         public override ulong MapVATR(ulong addr)
         {
             var section = sections.FirstOrDefault(x => addr >= x.addr && addr <= x.addr + x.size);
-            if (section == null)
-            {
-                return 0;
-            }
-            return addr - section.addr + section.offset;
+            return section == null ? 0 : addr - section.addr + section.offset;
         }
 
         public override ulong MapRTVA(ulong addr)
         {
             var section = sections.FirstOrDefault(x => addr >= x.offset && addr <= x.offset + x.size);
-            if (section == null)
-            {
-                return 0;
-            }
-            return addr - section.offset + section.addr;
+            return section == null ? 0 : addr - section.offset + section.addr;
         }
 
         public override bool Search()
@@ -99,7 +93,10 @@ namespace Il2CppDumper
             if (Version < 21)
             {
                 var __mod_init_func = sections.FirstOrDefault(x => x.sectname == "__mod_init_func");
-                if (__mod_init_func == null) return false;
+                if (__mod_init_func == null)
+                {
+                    return false;
+                }
                 var addrs = ReadClassArray<uint>(__mod_init_func.offset, __mod_init_func.size / 4u);
                 foreach (var a in addrs)
                 {
@@ -125,7 +122,7 @@ namespace Il2CppDumper
                                 Position = rsubaddr + 8;
                                 buff = ReadBytes(4);
                                 Position = rsubaddr + 14;
-                                buff = buff.Concat(ReadBytes(4)).ToArray();
+                                buff = [.. buff, .. ReadBytes(4)];
                                 var codeRegistration = DecodeMov(buff) + subaddr + 22u;
                                 Console.WriteLine("CodeRegistration : {0:x}", codeRegistration);
                                 Console.WriteLine("MetadataRegistration : {0:x}", metadataRegistration);
@@ -140,7 +137,10 @@ namespace Il2CppDumper
             else
             {
                 var __mod_init_func = sections.FirstOrDefault(x => x.sectname == "__mod_init_func");
-                if (__mod_init_func == null) return false;
+                if (__mod_init_func == null)
+                {
+                    return false;
+                }
                 var addrs = ReadClassArray<uint>(__mod_init_func.offset, __mod_init_func.size / 4u);
                 foreach (var a in addrs)
                 {
@@ -166,7 +166,7 @@ namespace Il2CppDumper
                                 Position = rsubaddr + 8;
                                 buff = ReadBytes(4);
                                 Position = rsubaddr + 14;
-                                buff = buff.Concat(ReadBytes(4)).ToArray();
+                                buff = [.. buff, .. ReadBytes(4)];
                                 var codeRegistration = DecodeMov(buff) + subaddr + 26u;
                                 Console.WriteLine("CodeRegistration : {0:x}", codeRegistration);
                                 Console.WriteLine("MetadataRegistration : {0:x}", metadataRegistration);
@@ -188,15 +188,9 @@ namespace Il2CppDumper
             return AutoPlusInit(codeRegistration, metadataRegistration);
         }
 
-        public override bool SymbolSearch()
-        {
-            return false;
-        }
+        public override bool SymbolSearch() => false;
 
-        public override ulong GetRVA(ulong pointer)
-        {
-            return pointer - vmaddr;
-        }
+        public override ulong GetRVA(ulong pointer) => pointer - vmaddr;
 
         public override SectionHelper GetSectionHelper(int methodCount, int typeDefinitionsCount, int imageCount)
         {

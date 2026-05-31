@@ -1,6 +1,6 @@
 ﻿namespace Il2CppDumper
 {
-    public class BlobValue
+    internal sealed class BlobValue
     {
         public object Value;
         public Il2CppTypeEnum il2CppTypeEnum;

@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Il2CppDumper
 {
-    public class Il2CppExecutor
+    internal sealed class Il2CppExecutor
     {
         public Metadata metadata;
         public Il2Cpp il2Cpp;
@@ -38,7 +38,7 @@ namespace Il2CppDumper
             this.metadata = metadata;
             this.il2Cpp = il2Cpp;
 
-            if (il2Cpp.Version >= 27 && il2Cpp.Version < 29)
+            if (il2Cpp.Version is >= 27 and < 29)
             {
                 customAttributeGenerators = new ulong[metadata.imageDefs.Sum(x => x.customAttributeCount)];
                 foreach (var imageDef in metadata.imageDefs)
@@ -108,14 +108,14 @@ namespace Il2CppDumper
                         else if (addNamespace)
                         {
                             var @namespace = metadata.GetStringFromIndex(typeDef.namespaceIndex);
-                            if (@namespace != "")
+                            if (!string.IsNullOrEmpty(@namespace))
                             {
                                 str += @namespace + ".";
                             }
                         }
 
                         var typeName = metadata.GetStringFromIndex(typeDef.nameIndex);
-                        var index = typeName.IndexOf("`");
+                        var index = typeName.IndexOf('`', StringComparison.Ordinal);
                         if (index != -1)
                         {
                             str += typeName[..index];
@@ -126,7 +126,9 @@ namespace Il2CppDumper
                         }
 
                         if (is_nested)
+                        {
                             return str;
+                        }
 
                         if (genericClass != null)
                         {
@@ -156,7 +158,7 @@ namespace Il2CppDumper
             else if (addNamespace)
             {
                 var @namespace = metadata.GetStringFromIndex(typeDef.namespaceIndex);
-                if (@namespace != "")
+                if (!string.IsNullOrEmpty(@namespace))
                 {
                     prefix = @namespace + ".";
                 }
@@ -164,7 +166,7 @@ namespace Il2CppDumper
             var typeName = metadata.GetStringFromIndex(typeDef.nameIndex);
             if (typeDef.genericContainerIndex >= 0)
             {
-                var index = typeName.IndexOf("`");
+                var index = typeName.IndexOf('`', StringComparison.Ordinal);
                 if (index != -1)
                 {
                     typeName = typeName[..index];
@@ -241,7 +243,7 @@ namespace Il2CppDumper
             Il2CppRGCTXDefinition[] collection = null;
             if (il2Cpp.Version >= 24.2)
             {
-                il2Cpp.rgctxsDictionary[imageName].TryGetValue(typeDef.token, out collection);
+                _ = il2Cpp.rgctxsDictionary[imageName].TryGetValue(typeDef.token, out collection);
             }
             else
             {
@@ -259,7 +261,7 @@ namespace Il2CppDumper
             Il2CppRGCTXDefinition[] collection = null;
             if (il2Cpp.Version >= 24.2)
             {
-                il2Cpp.rgctxsDictionary[imageName].TryGetValue(methodDef.token, out collection);
+                _ = il2Cpp.rgctxsDictionary[imageName].TryGetValue(methodDef.token, out collection);
             }
             else
             {
@@ -277,17 +279,9 @@ namespace Il2CppDumper
             if (il2Cpp.Version >= 27)
             {
                 var il2CppType = il2Cpp.GetIl2CppType(genericClass.type);
-                if (il2CppType == null)
-                {
-                    return null;
-                }
-                return GetTypeDefinitionFromIl2CppType(il2CppType);
+                return il2CppType == null ? null : GetTypeDefinitionFromIl2CppType(il2CppType);
             }
-            if (genericClass.typeDefinitionIndex == 4294967295 || genericClass.typeDefinitionIndex == -1)
-            {
-                return null;
-            }
-            return metadata.typeDefs[genericClass.typeDefinitionIndex];
+            return genericClass.typeDefinitionIndex is 4294967295 or -1 ? null : metadata.typeDefs[genericClass.typeDefinitionIndex];
         }
 
         public Il2CppTypeDefinition GetTypeDefinitionFromIl2CppType(Il2CppType il2CppType)
@@ -295,13 +289,14 @@ namespace Il2CppDumper
             if (il2Cpp.Version >= 27 && il2Cpp.IsDumped)
             {
                 var offset = il2CppType.data.typeHandle - metadata.ImageBase - (metadata.Version < 38 ? metadata.header.typeDefinitionsOffset : metadata.header.typeDefinitions.offset);
-                var index = offset / (ulong)metadata.SizeOf(typeof(Il2CppTypeDefinition));
-                return metadata.typeDefs[index];
+                var index = (int)(offset / (ulong)metadata.SizeOf(typeof(Il2CppTypeDefinition)));
+                if (index >= 0 && index < metadata.typeDefs.Length)
+                    return metadata.typeDefs[index];
             }
-            else
-            {
-                return metadata.typeDefs[il2CppType.data.klassIndex];
-            }
+            var klassIndex = il2CppType.data.klassIndex;
+            if (klassIndex >= 0 && klassIndex < metadata.typeDefs.Length)
+                return metadata.typeDefs[klassIndex];
+            return metadata.typeDefs[0];
         }
 
         public Il2CppGenericParameter GetGenericParameteFromIl2CppType(Il2CppType il2CppType)
@@ -318,10 +313,7 @@ namespace Il2CppDumper
             }
         }
 
-        public SectionHelper GetSectionHelper()
-        {
-            return il2Cpp.GetSectionHelper(metadata.methodDefs.Count(x => x.methodIndex >= 0), metadata.typeDefs.Length, metadata.imageDefs.Length);
-        }
+        public SectionHelper GetSectionHelper() => il2Cpp.GetSectionHelper(metadata.methodDefs.Count(x => x.methodIndex >= 0), metadata.typeDefs.Length, metadata.imageDefs.Length);
 
         public bool TryGetDefaultValue(int typeIndex, int dataIndex, out object value)
         {
@@ -367,24 +359,10 @@ namespace Il2CppDumper
                     value.Value = reader.ReadInt16();
                     return true;
                 case Il2CppTypeEnum.IL2CPP_TYPE_U4:
-                    if (il2Cpp.Version >= 29)
-                    {
-                        value.Value = reader.ReadCompressedUInt32();
-                    }
-                    else
-                    {
-                        value.Value = reader.ReadUInt32();
-                    }
+                    value.Value = il2Cpp.Version >= 29 ? reader.ReadCompressedUInt32() : reader.ReadUInt32();
                     return true;
                 case Il2CppTypeEnum.IL2CPP_TYPE_I4:
-                    if (il2Cpp.Version >= 29)
-                    {
-                        value.Value = reader.ReadCompressedInt32();
-                    }
-                    else
-                    {
-                        value.Value = reader.ReadInt32();
-                    }
+                    value.Value = il2Cpp.Version >= 29 ? reader.ReadCompressedInt32() : reader.ReadInt32();
                     return true;
                 case Il2CppTypeEnum.IL2CPP_TYPE_U8:
                     value.Value = reader.ReadUInt64();
@@ -403,14 +381,7 @@ namespace Il2CppDumper
                     if (il2Cpp.Version >= 29)
                     {
                         length = reader.ReadCompressedInt32();
-                        if (length == -1)
-                        {
-                            value.Value = null;
-                        }
-                        else
-                        {
-                            value.Value = Encoding.UTF8.GetString(reader.ReadBytes(length));
-                        }
+                        value.Value = length == -1 ? null : Encoding.UTF8.GetString(reader.ReadBytes(length));
                     }
                     else
                     {
@@ -436,7 +407,7 @@ namespace Il2CppDumper
                             {
                                 elementType = ReadEncodedTypeEnum(reader, out enumType);
                             }
-                            GetConstantValueFromBlob(elementType, reader, out var data);
+                            _ = GetConstantValueFromBlob(elementType, reader, out var data);
                             data.il2CppTypeEnum = elementType;
                             data.EnumType = enumType;
                             array[i] = data;
@@ -446,14 +417,7 @@ namespace Il2CppDumper
                     return true;
                 case Il2CppTypeEnum.IL2CPP_TYPE_IL2CPP_TYPE_INDEX:
                     var typeIndex = reader.ReadCompressedInt32();
-                    if (typeIndex == -1)
-                    {
-                        value.Value = null;
-                    }
-                    else
-                    {
-                        value.Value = il2Cpp.types[typeIndex];
-                    }
+                    value.Value = typeIndex == -1 ? null : il2Cpp.types[typeIndex];
                     return true;
                 default:
                     value = null;

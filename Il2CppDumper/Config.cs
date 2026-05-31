@@ -2,13 +2,15 @@
 
 namespace Il2CppDumper
 {
-    public class ReplaceHashName
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Microsoft.Performance", "CA1812")]
+    internal sealed class ReplaceHashName
     {
         public string TargetName { get; set; }
         public string ReplaceToName { get; set; }
     }
 
-    public class Config
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Microsoft.Performance", "CA1812")]
+    internal sealed class Config
     {
         public bool DumpMethod { get; set; } = true;
         public bool DumpField { get; set; } = true;
@@ -19,13 +21,13 @@ namespace Il2CppDumper
         public bool DumpTypeDefIndex { get; set; } = true;
         public bool GenerateDummyDll { get; set; } = true;
         public bool GenerateStruct { get; set; } = true;
-        public bool DummyDllAddToken { get; set; } = false;
-        public bool DummyDllAddOffset { get; set; } = false;
-        public bool ForceIl2CppVersion { get; set; } = false;
+        public bool DummyDllAddToken { get; set; }
+        public bool DummyDllAddOffset { get; set; }
+        public bool ForceIl2CppVersion { get; set; }
         public double ForceVersion { get; set; } = 29;
-        public bool ForceDump { get; set; } = false;
-        public bool NoRedirectedPointer { get; set; } = false;
-        public bool DisablePlusSearch { get; set; } = false;
+        public bool ForceDump { get; set; }
+        public bool NoRedirectedPointer { get; set; }
+        public bool DisablePlusSearch { get; set; }
         public List<ReplaceHashName> ReplaceHashNames { get; set; }
         public Dictionary<string, string> ReplaceHashNameMap { get; set; }
     }

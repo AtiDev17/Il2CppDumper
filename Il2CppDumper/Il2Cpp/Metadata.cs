@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Il2CppDumper
 {
-    public sealed class Metadata : BinaryStream
+    internal sealed class Metadata : BinaryStream
     {
         public Il2CppGlobalMetadataHeader header;
         public Il2CppImageDefinition[] imageDefs;
@@ -38,8 +38,8 @@ namespace Il2CppDumper
         public uint[] vtableMethods;
         public Il2CppRGCTXDefinition[] rgctxEntries;
 
-        private readonly Dictionary<uint, string> stringCache = new();
-        private readonly Dictionary<Type, int> sizeCache = new();
+        private readonly Dictionary<uint, string> stringCache = [];
+        private readonly Dictionary<Type, int> sizeCache = [];
 
         public static int typeIndexSize;
         public static int typeDefinitionIndexSize;
@@ -54,11 +54,11 @@ namespace Il2CppDumper
                 throw new InvalidDataException("ERROR: Metadata file supplied is not valid metadata file.");
             }
             var version = ReadInt32();
-            if (version < 0 || version > 1000)
+            if (version is < 0 or > 1000)
             {
                 throw new InvalidDataException("ERROR: Metadata file supplied is not valid metadata file.");
             }
-            if (version < 16 || version > 39)
+            if (version is < 16 or > 39)
             {
                 throw new NotSupportedException($"ERROR: Metadata file supplied is not a supported version[{version}].");
             }
@@ -151,12 +151,12 @@ namespace Il2CppDumper
             fieldDefaultValuesDic = new Dictionary<int, Il2CppFieldDefaultValue>(fieldDefaultValues.Length);
             foreach (var fdv in fieldDefaultValues)
             {
-                fieldDefaultValuesDic.TryAdd(fdv.fieldIndex, fdv);
+                _ = fieldDefaultValuesDic.TryAdd(fdv.fieldIndex, fdv);
             }
             parameterDefaultValuesDic = new Dictionary<ParameterIndex, Il2CppParameterDefaultValue>(parameterDefaultValues.Length);
             foreach (var pdv in parameterDefaultValues)
             {
-                parameterDefaultValuesDic.TryAdd(pdv.parameterIndex, pdv);
+                _ = parameterDefaultValuesDic.TryAdd(pdv.parameterIndex, pdv);
             }
             propertyDefs = Version < 38
                 ? ReadMetadataClassArray<Il2CppPropertyDefinition>(header.propertiesOffset, header.propertiesSize)
@@ -212,7 +212,7 @@ namespace Il2CppDumper
                     ProcessingMetadataUsage();
                 }
             }
-            if (Version > 20 && Version < 29)
+            if (Version is > 20 and < 29)
             {
                 attributeTypeRanges = ReadMetadataClassArray<Il2CppCustomAttributeTypeRange>(header.attributesInfoOffset, header.attributesInfoCount);
                 attributeTypes = ReadClassArray<int>(header.attributeTypesOffset, header.attributeTypesCount / 4);
@@ -225,7 +225,7 @@ namespace Il2CppDumper
             }
             if (Version > 24)
             {
-                attributeTypeRangesDic = new Dictionary<Il2CppImageDefinition, Dictionary<uint, int>>();
+                attributeTypeRangesDic = [];
                 foreach (var imageDef in imageDefs)
                 {
                     var dic = new Dictionary<uint, int>();
@@ -252,30 +252,20 @@ namespace Il2CppDumper
 
         public static int GetIndexSize(int count)
         {
-            if (count <= 0xFF) return 1;
-            if (count <= 0xFFFF) return 2;
-            return 4;
+            if (count <= 0xFF)
+            {
+                return 1;
+            }
+            return count <= 0xFFFF ? 2 : 4;
         }
 
-        private T[] ReadMetadataClassArray<T>(uint addr, int count) where T : new()
-        {
-            return ReadClassArray<T>(addr, count / SizeOf(typeof(T)));
-        }
+        private T[] ReadMetadataClassArray<T>(uint addr, int count) where T : new() => ReadClassArray<T>(addr, count / SizeOf(typeof(T)));
 
-        public bool GetFieldDefaultValueFromIndex(int index, out Il2CppFieldDefaultValue value)
-        {
-            return fieldDefaultValuesDic.TryGetValue(index, out value);
-        }
+        public bool GetFieldDefaultValueFromIndex(int index, out Il2CppFieldDefaultValue value) => fieldDefaultValuesDic.TryGetValue(index, out value);
 
-        public bool GetParameterDefaultValueFromIndex(int index, out Il2CppParameterDefaultValue value)
-        {
-            return parameterDefaultValuesDic.TryGetValue(new ParameterIndex(index), out value);
-        }
+        public bool GetParameterDefaultValueFromIndex(int index, out Il2CppParameterDefaultValue value) => parameterDefaultValuesDic.TryGetValue(new ParameterIndex(index), out value);
 
-        public uint GetDefaultValueFromIndex(int index)
-        {
-            return (uint)((Version < 38 ? header.fieldAndParameterDefaultValueDataOffset : header.fieldAndParameterDefaultValueData.offset) + index);
-        }
+        public uint GetDefaultValueFromIndex(int index) => (uint)((Version < 38 ? header.fieldAndParameterDefaultValueDataOffset : header.fieldAndParameterDefaultValueData.offset) + index);
 
         public string GetStringFromIndex(uint index)
         {
@@ -298,14 +288,7 @@ namespace Il2CppDumper
         {
             if (Version > 24)
             {
-                if (attributeTypeRangesDic[imageDef].TryGetValue(token, out var index))
-                {
-                    return index;
-                }
-                else
-                {
-                    return -1;
-                }
+                return attributeTypeRangesDic[imageDef].TryGetValue(token, out var index) ? index : -1;
             }
             else
             {
@@ -316,7 +299,7 @@ namespace Il2CppDumper
         public string GetStringLiteralFromIndex(uint index)
         {
             var currentLiteral = stringLiterals[index];
-            int stringLength = 0;
+            int stringLength;
             if (index < stringLiterals.Length - 1)
             {
                 var nextLiteral = stringLiterals[index + 1];
@@ -333,10 +316,10 @@ namespace Il2CppDumper
 
         private void ProcessingMetadataUsage()
         {
-            metadataUsageDic = new Dictionary<Il2CppMetadataUsage, SortedDictionary<uint, uint>>();
+            metadataUsageDic = [];
             for (uint i = 1; i <= 6; i++)
             {
-                metadataUsageDic[(Il2CppMetadataUsage)i] = new SortedDictionary<uint, uint>();
+                metadataUsageDic[(Il2CppMetadataUsage)i] = [];
             }
             foreach (var metadataUsageList in metadataUsageLists)
             {
@@ -357,24 +340,19 @@ namespace Il2CppDumper
             metadataUsagesCount = metadataUsageDic.Max(x => x.Value.Select(y => y.Key).DefaultIfEmpty().Max()) + 1;
         }
 
-        public static uint GetEncodedIndexType(uint index)
-        {
-            return (index & 0xE0000000) >> 29;
-        }
+        public static uint GetEncodedIndexType(uint index) => (index & 0xE0000000) >> 29;
 
         public uint GetDecodedMethodIndex(uint index)
         {
-            if (Version >= 27)
-            {
-                return (index & 0x1FFFFFFEU) >> 1;
-            }
-            return index & 0x1FFFFFFFU;
+            return Version >= 27 ? (index & 0x1FFFFFFEU) >> 1 : index & 0x1FFFFFFFU;
         }
 
         public int SizeOf(Type type)
         {
             if (sizeCache.TryGetValue(type, out var cached))
+            {
                 return cached;
+            }
             var size = 0;
             foreach (var i in type.GetFields())
             {
@@ -382,7 +360,9 @@ namespace Il2CppDumper
                 if (attr != null)
                 {
                     if (Version < attr.Min || Version > attr.Max)
+                    {
                         continue;
+                    }
                 }
                 var fieldType = i.FieldType;
                 if (fieldType.IsPrimitive)
@@ -424,7 +404,7 @@ namespace Il2CppDumper
             return size;
         }
 
-        static int GetPrimitiveTypeSize(string name)
+        private static int GetPrimitiveTypeSize(string name)
         {
             return name switch
             {

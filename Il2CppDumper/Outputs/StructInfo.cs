@@ -3,18 +3,18 @@ using System.Collections.Generic;
 
 namespace Il2CppDumper
 {
-    public class StructInfo
+    internal sealed class StructInfo
     {
         public string TypeName;
         public bool IsValueType;
         public string Parent;
-        public List<StructFieldInfo> Fields = new();
-        public List<StructFieldInfo> StaticFields = new();
-        public StructVTableMethodInfo[] VTableMethod = Array.Empty<StructVTableMethodInfo>();
-        public List<StructRGCTXInfo> RGCTXs = new();
+        public List<StructFieldInfo> Fields = [];
+        public List<StructFieldInfo> StaticFields = [];
+        public StructVTableMethodInfo[] VTableMethod = [];
+        public List<StructRGCTXInfo> RGCTXs = [];
     }
 
-    public class StructFieldInfo
+    internal sealed class StructFieldInfo
     {
         public string FieldTypeName;
         public string FieldName;
@@ -22,12 +22,12 @@ namespace Il2CppDumper
         public bool IsCustomType;
     }
 
-    public class StructVTableMethodInfo
+    internal sealed class StructVTableMethodInfo
     {
         public string MethodName;
     }
 
-    public class StructRGCTXInfo
+    internal sealed class StructRGCTXInfo
     {
         public Il2CppRGCTXDataType Type;
         public string TypeName;

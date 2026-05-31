@@ -3,17 +3,19 @@ using static Il2CppDumper.FileDialogNative;
 
 namespace Il2CppDumper
 {
-    public class OpenFileDialog
+    internal sealed class OpenFileDialog
     {
+        private static readonly char[] FilterSeparators = ['|'];
+
         public string Title { get; set; }
         public string Filter { get; set; }
         public string FileName { get; set; }
 
         public bool ShowDialog()
         {
-            var dialog = (IFileDialog)(new FileOpenDialogRCW());
+            var dialog = (IFileDialog)new FileOpenDialogRCW();
             dialog.GetOptions(out var options);
-            options |= FOS.FOS_FORCEFILESYSTEM | FOS.FOS_NOVALIDATE | FOS.FOS_DONTADDTORECENT;
+            options |= FOS.FORCEFILESYSTEM | FOS.NOVALIDATE | FOS.DONTADDTORECENT;
             dialog.SetOptions(options);
             if (!string.IsNullOrEmpty(Title))
             {
@@ -21,7 +23,7 @@ namespace Il2CppDumper
             }
             if (!string.IsNullOrEmpty(Filter))
             {
-                string[] filterElements = Filter.Split(new char[] { '|' });
+                string[] filterElements = Filter.Split(FilterSeparators);
                 COMDLG_FILTERSPEC[] filter = new COMDLG_FILTERSPEC[filterElements.Length / 2];
                 for (int x = 0; x < filterElements.Length; x += 2)
                 {
@@ -33,7 +35,7 @@ namespace Il2CppDumper
             if (dialog.Show(IntPtr.Zero) == 0)
             {
                 dialog.GetResult(out var shellItem);
-                shellItem.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out var ppszName);
+                shellItem.GetDisplayName(SIGDN.FILESYSPATH, out var ppszName);
                 FileName = ppszName;
                 return true;
             }
@@ -44,16 +46,16 @@ namespace Il2CppDumper
         }
     }
 
-    public class FolderBrowserDialog
+    internal sealed class FolderBrowserDialog
     {
         public string Description { get; set; }
         public string SelectedPath { get; set; }
 
         public bool ShowDialog()
         {
-            var dialog = (IFileDialog)(new FileOpenDialogRCW());
+            var dialog = (IFileDialog)new FileOpenDialogRCW();
             dialog.GetOptions(out var options);
-            options |= FOS.FOS_PICKFOLDERS | FOS.FOS_FORCEFILESYSTEM | FOS.FOS_NOVALIDATE | FOS.FOS_DONTADDTORECENT;
+            options |= FOS.PICKFOLDERS | FOS.FORCEFILESYSTEM | FOS.NOVALIDATE | FOS.DONTADDTORECENT;
             dialog.SetOptions(options);
             if (!string.IsNullOrEmpty(Description))
             {
@@ -62,7 +64,7 @@ namespace Il2CppDumper
             if (dialog.Show(IntPtr.Zero) == 0)
             {
                 dialog.GetResult(out var shellItem);
-                shellItem.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out var ppszName);
+                shellItem.GetDisplayName(SIGDN.FILESYSPATH, out var ppszName);
                 SelectedPath = ppszName;
                 return true;
             }

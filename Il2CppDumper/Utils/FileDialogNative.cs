@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Il2CppDumper
 {
-    static class FileDialogNative
+    internal static class FileDialogNative
     {
         [ComImport]
         [ClassInterface(ClassInterfaceType.None)]
@@ -12,9 +12,8 @@ namespace Il2CppDumper
         internal class FileOpenDialogRCW
         { }
 
-        internal class IIDGuid
+        internal static class IIDGuid
         {
-            private IIDGuid() { } // Avoid FxCop violation AvoidUninstantiatedInternalClasses
             // IID GUID strings for relevant COM interfaces
             internal const string IModalWindow = "b4db1657-70d7-485e-8e3e-6fcb5a5c1802";
             internal const string IFileDialog = "42f85136-db7e-439c-85f1-e4075d135fc8";
@@ -25,9 +24,8 @@ namespace Il2CppDumper
             internal const string IShellItemArray = "B63EA76D-1F85-456F-A19C-48159EFA858B";
         }
 
-        internal class CLSIDGuid
+        internal static class CLSIDGuid
         {
-            private CLSIDGuid() { } // Avoid FxCop violation AvoidUninstantiatedInternalClasses
             internal const string FileOpenDialog = "DC1C5A9C-E88A-4dde-A5A1-60F82A20AEF7";
             internal const string FileSaveDialog = "C0B4E2F3-BA21-4773-8DBA-335EC946EB8B";
         }
@@ -131,15 +129,15 @@ namespace Il2CppDumper
 
         internal enum SIGDN : uint
         {
-            SIGDN_NORMALDISPLAY = 0x00000000,           // SHGDN_NORMAL
-            SIGDN_PARENTRELATIVEPARSING = 0x80018001,   // SHGDN_INFOLDER | SHGDN_FORPARSING
-            SIGDN_DESKTOPABSOLUTEPARSING = 0x80028000,  // SHGDN_FORPARSING
-            SIGDN_PARENTRELATIVEEDITING = 0x80031001,   // SHGDN_INFOLDER | SHGDN_FOREDITING
-            SIGDN_DESKTOPABSOLUTEEDITING = 0x8004c000,  // SHGDN_FORPARSING | SHGDN_FORADDRESSBAR
-            SIGDN_FILESYSPATH = 0x80058000,             // SHGDN_FORPARSING
-            SIGDN_URL = 0x80068000,                     // SHGDN_FORPARSING
-            SIGDN_PARENTRELATIVEFORADDRESSBAR = 0x8007c001,     // SHGDN_INFOLDER | SHGDN_FORPARSING | SHGDN_FORADDRESSBAR
-            SIGDN_PARENTRELATIVE = 0x80080001           // SHGDN_INFOLDER
+            NORMALDISPLAY = 0x00000000,           // SHGDN_NORMAL
+            PARENTRELATIVEPARSING = 0x80018001,   // SHGDN_INFOLDER | SHGDN_FORPARSING
+            DESKTOPABSOLUTEPARSING = 0x80028000,  // SHGDN_FORPARSING
+            PARENTRELATIVEEDITING = 0x80031001,   // SHGDN_INFOLDER | SHGDN_FOREDITING
+            DESKTOPABSOLUTEEDITING = 0x8004c000,  // SHGDN_FORPARSING | SHGDN_FORADDRESSBAR
+            FILESYSPATH = 0x80058000,             // SHGDN_FORPARSING
+            URL = 0x80068000,                     // SHGDN_FORPARSING
+            PARENTRELATIVEFORADDRESSBAR = 0x8007c001,     // SHGDN_INFOLDER | SHGDN_FORPARSING | SHGDN_FORADDRESSBAR
+            PARENTRELATIVE = 0x80080001           // SHGDN_INFOLDER
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto, Pack = 4)]
@@ -154,40 +152,40 @@ namespace Il2CppDumper
         [Flags]
         internal enum FOS : uint
         {
-            FOS_OVERWRITEPROMPT = 0x00000002,
-            FOS_STRICTFILETYPES = 0x00000004,
-            FOS_NOCHANGEDIR = 0x00000008,
-            FOS_PICKFOLDERS = 0x00000020,
-            FOS_FORCEFILESYSTEM = 0x00000040, // Ensure that items returned are filesystem items.
-            FOS_ALLNONSTORAGEITEMS = 0x00000080, // Allow choosing items that have no storage.
-            FOS_NOVALIDATE = 0x00000100,
-            FOS_ALLOWMULTISELECT = 0x00000200,
-            FOS_PATHMUSTEXIST = 0x00000800,
-            FOS_FILEMUSTEXIST = 0x00001000,
-            FOS_CREATEPROMPT = 0x00002000,
-            FOS_SHAREAWARE = 0x00004000,
-            FOS_NOREADONLYRETURN = 0x00008000,
-            FOS_NOTESTFILECREATE = 0x00010000,
-            FOS_HIDEMRUPLACES = 0x00020000,
-            FOS_HIDEPINNEDPLACES = 0x00040000,
-            FOS_NODEREFERENCELINKS = 0x00100000,
-            FOS_DONTADDTORECENT = 0x02000000,
-            FOS_FORCESHOWHIDDEN = 0x10000000,
-            FOS_DEFAULTNOMINIMODE = 0x20000000
+            OVERWRITEPROMPT = 0x00000002,
+            STRICTFILETYPES = 0x00000004,
+            NOCHANGEDIR = 0x00000008,
+            PICKFOLDERS = 0x00000020,
+            FORCEFILESYSTEM = 0x00000040, // Ensure that items returned are filesystem items.
+            ALLNONSTORAGEITEMS = 0x00000080, // Allow choosing items that have no storage.
+            NOVALIDATE = 0x00000100,
+            ALLOWMULTISELECT = 0x00000200,
+            PATHMUSTEXIST = 0x00000800,
+            FILEMUSTEXIST = 0x00001000,
+            CREATEPROMPT = 0x00002000,
+            SHAREAWARE = 0x00004000,
+            NOREADONLYRETURN = 0x00008000,
+            NOTESTFILECREATE = 0x00010000,
+            HIDEMRUPLACES = 0x00020000,
+            HIDEPINNEDPLACES = 0x00040000,
+            NODEREFERENCELINKS = 0x00100000,
+            DONTADDTORECENT = 0x02000000,
+            FORCESHOWHIDDEN = 0x10000000,
+            DEFAULTNOMINIMODE = 0x20000000
         }
 
         internal enum FDE_SHAREVIOLATION_RESPONSE
         {
-            FDESVR_DEFAULT = 0x00000000,
-            FDESVR_ACCEPT = 0x00000001,
-            FDESVR_REFUSE = 0x00000002
+            DEFAULT = 0x00000000,
+            ACCEPT = 0x00000001,
+            REFUSE = 0x00000002
         }
 
         internal enum FDE_OVERWRITE_RESPONSE
         {
-            FDEOR_DEFAULT = 0x00000000,
-            FDEOR_ACCEPT = 0x00000001,
-            FDEOR_REFUSE = 0x00000002
+            DEFAULT = 0x00000000,
+            ACCEPT = 0x00000001,
+            REFUSE = 0x00000002
         }
     }
 }

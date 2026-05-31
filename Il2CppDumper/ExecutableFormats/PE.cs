@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Il2CppDumper
 {
-    public sealed class PE : Il2Cpp
+    internal sealed class PE : Il2Cpp
     {
         private readonly SectionHeader[] sections;
 
@@ -58,27 +58,16 @@ namespace Il2CppDumper
         {
             var addr = absAddr - ImageBase;
             var section = sections.FirstOrDefault(x => addr >= x.VirtualAddress && addr <= x.VirtualAddress + x.VirtualSize);
-            if (section == null)
-            {
-                return 0ul;
-            }
-            return addr - section.VirtualAddress + section.PointerToRawData;
+            return section == null ? 0ul : addr - section.VirtualAddress + section.PointerToRawData;
         }
 
         public override ulong MapRTVA(ulong addr)
         {
             var section = sections.FirstOrDefault(x => addr >= x.PointerToRawData && addr <= x.PointerToRawData + x.SizeOfRawData);
-            if (section == null)
-            {
-                return 0ul;
-            }
-            return addr - section.PointerToRawData + section.VirtualAddress + ImageBase;
+            return section == null ? 0ul : addr - section.PointerToRawData + section.VirtualAddress + ImageBase;
         }
 
-        public override bool Search()
-        {
-            return false;
-        }
+        public override bool Search() => false;
 
         public override bool PlusSearch(int methodCount, int typeDefinitionsCount, int imageCount)
         {
@@ -88,15 +77,9 @@ namespace Il2CppDumper
             return AutoPlusInit(codeRegistration, metadataRegistration);
         }
 
-        public override bool SymbolSearch()
-        {
-            return false;
-        }
+        public override bool SymbolSearch() => false;
 
-        public override ulong GetRVA(ulong pointer)
-        {
-            return pointer - ImageBase;
-        }
+        public override ulong GetRVA(ulong pointer) => pointer - ImageBase;
 
         public override SectionHelper GetSectionHelper(int methodCount, int typeDefinitionsCount, int imageCount)
         {
@@ -113,6 +96,8 @@ namespace Il2CppDumper
                     case 0xC0000040:
                         dataList.Add(section);
                         break;
+                    default:
+                        break;
                 }
             }
             var sectionHelper = new SectionHelper(this, methodCount, typeDefinitionsCount, metadataUsagesCount, imageCount);
@@ -126,14 +111,7 @@ namespace Il2CppDumper
 
         public override bool CheckDump()
         {
-            if (Is32Bit)
-            {
-                return ImageBase != 0x10000000;
-            }
-            else
-            {
-                return ImageBase != 0x180000000;
-            }
+            return Is32Bit ? ImageBase != 0x10000000 : ImageBase != 0x180000000;
         }
     }
 }

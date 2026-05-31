@@ -1,6 +1,6 @@
 ﻿namespace Il2CppDumper
 {
-    public class NSOHeader
+    internal sealed class NSOHeader
     {
         public uint Magic;
         public uint Version;
@@ -27,14 +27,14 @@
         public NSOSegmentHeader BssSegment;
     }
 
-    public class NSOSegmentHeader
+    internal sealed class NSOSegmentHeader
     {
         public uint FileOffset;
         public uint MemoryOffset;
         public uint DecompressedSize;
     }
 
-    public class NSORelativeExtent
+    internal sealed class NSORelativeExtent
     {
         public uint RegionRoDataOffset;
         public uint RegionSize;

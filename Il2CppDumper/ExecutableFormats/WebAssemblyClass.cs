@@ -1,6 +1,6 @@
 ﻿namespace Il2CppDumper
 {
-    public class DataSection
+    internal sealed class DataSection
     {
         public uint Index;
         public uint Offset;

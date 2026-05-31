@@ -1,8 +1,8 @@
 ﻿namespace Il2CppDumper
 {
-    public static class HeaderConstants
+    internal static class HeaderConstants
     {
-        public readonly static string GenericHeader =
+        public const string GenericHeader =
 @"typedef signed char int8_t;
 typedef short int16_t;
 typedef int int32_t;
@@ -54,7 +54,7 @@ struct Il2CppRuntimeInterfaceOffsetPair
 };
 ";
 
-        public readonly static string HeaderV29 =
+        public const string HeaderV29 =
 @"struct Il2CppClass_1
 {
     void* image;
@@ -163,7 +163,7 @@ struct MethodInfo
 
 ";
 
-        public readonly static string HeaderV27 =
+        public const string HeaderV27 =
 @"struct Il2CppClass_1
 {
     void* image;
@@ -270,7 +270,7 @@ struct MethodInfo
 
 ";
 
-        public readonly static string HeaderV242 =
+        public const string HeaderV242 =
 @"struct Il2CppClass_1
 {
     void* image;
@@ -377,7 +377,7 @@ struct MethodInfo
 
 ";
 
-        public readonly static string HeaderV241 =
+        public const string HeaderV241 =
 @"struct Il2CppClass_1
 {
     void* image;
@@ -483,7 +483,7 @@ struct MethodInfo
 
 ";
 
-        public readonly static string HeaderV240 =
+        public const string HeaderV240 =
 @"struct Il2CppClass_1
 {
     void* image;
@@ -588,7 +588,7 @@ struct MethodInfo
 
 ";
 
-        public readonly static string HeaderV22 =
+        public const string HeaderV22 =
 @"struct Il2CppClass_1
 {
     void* image;

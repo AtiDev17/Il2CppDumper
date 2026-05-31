@@ -7,7 +7,7 @@ using System.IO;
 
 namespace Il2CppDumper
 {
-    public class Lz4DecoderStream : Stream
+    internal sealed class Lz4DecoderStream : Stream
     {
         public Lz4DecoderStream(Stream input, long inputLength = long.MaxValue)
         {
@@ -87,13 +87,15 @@ namespace Il2CppDumper
         public override int Read(byte[] buffer, int offset, int count)
         {
 #if CHECK_ARGS
-            if (buffer == null)
-                throw new ArgumentNullException("buffer");
-            if (offset < 0 || count < 0 || buffer.Length - count < offset)
-                throw new ArgumentOutOfRangeException();
+            ArgumentNullException.ThrowIfNull(buffer);
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - offset);
 
             if (input == null)
+            {
                 throw new InvalidOperationException();
+            }
 #endif
             int nRead, nToRead = count;
 
@@ -129,6 +131,9 @@ namespace Il2CppDumper
 
                 case DecodePhase.CopyMatch:
                     goto copyMatch;
+
+                default:
+                    break;
             }
 
         readToken:
@@ -150,7 +155,9 @@ namespace Il2CppDumper
 #endif
 #if CHECK_EOF
                 if (tok == -1)
+                {
                     goto finish;
+                }
 #endif
             }
 
@@ -191,13 +198,17 @@ namespace Il2CppDumper
 
 #if CHECK_EOF
                 if (exLitLen == -1)
+                {
                     goto finish;
+                }
 #endif
             }
 
             litLen += exLitLen;
             if (exLitLen == 255)
+            {
                 goto readExLiteralLength;
+            }
 
             phase = DecodePhase.CopyLiteral;
             goto copyLiteral;
@@ -211,7 +222,9 @@ namespace Il2CppDumper
                     int ofs = offset;
 
                     for (int c = nReadLit; c-- != 0;)
+                    {
                         buffer[ofs++] = decBuf[inBufPos++];
+                    }
 
                     nRead = nReadLit;
                 }
@@ -227,7 +240,9 @@ namespace Il2CppDumper
 #endif
 #if CHECK_EOF
                     if (nRead == 0)
+                    {
                         goto finish;
+                    }
 #endif
                 }
 
@@ -237,11 +252,15 @@ namespace Il2CppDumper
                 litLen -= nRead;
 
                 if (litLen != 0)
+                {
                     goto copyLiteral;
+                }
             }
 
             if (nToRead == 0)
+            {
                 goto finish;
+            }
 
             phase = DecodePhase.ReadOffset;
             goto readOffset;
@@ -264,7 +283,9 @@ namespace Il2CppDumper
 #endif
 #if CHECK_EOF
                 if (matDst == -1)
+                {
                     goto finish;
+                }
 #endif
             }
 
@@ -297,13 +318,17 @@ namespace Il2CppDumper
 #endif
 #if CHECK_EOF
                 if (exMatLen == -1)
+                {
                     goto finish;
+                }
 #endif
             }
 
             matLen += exMatLen;
             if (exMatLen == 255)
+            {
                 goto readExMatchLength;
+            }
 
             phase = DecodePhase.CopyMatch;
             goto copyMatch;
@@ -321,11 +346,15 @@ namespace Il2CppDumper
 
                     int bufSrc = decodeBufferPos - bufDst;
                     if (bufSrc < 0)
+                    {
                         bufSrc += DecBufLen;
+                    }
                     int bufCnt = bufDst < nCpyMat ? bufDst : nCpyMat;
 
                     for (int c = bufCnt; c-- != 0;)
+                    {
                         buffer[offset++] = decBuf[bufSrc++ & DecBufMask];
+                    }
                 }
                 else
                 {
@@ -334,14 +363,18 @@ namespace Il2CppDumper
 
                 int sOfs = offset - matDst;
                 for (int i = bufDst; i < nCpyMat; i++)
+                {
                     buffer[offset++] = buffer[sOfs++];
+                }
 
                 nToRead -= nCpyMat;
                 matLen -= nCpyMat;
             }
 
             if (nToRead == 0)
+            {
                 goto finish;
+            }
 
             phase = DecodePhase.ReadToken;
             goto readToken;
@@ -362,7 +395,9 @@ namespace Il2CppDumper
                 int decPos = decodeBufferPos;
 
                 while (nToBuf-- != 0)
+                {
                     decBuf[decPos++ & DecBufMask] = buffer[repPos++];
+                }
 
                 decodeBufferPos = decPos & DecBufMask;
             }
@@ -385,7 +420,9 @@ namespace Il2CppDumper
 
 #if CHECK_EOF
                 if (nRead == 0)
+                {
                     return -1;
+                }
 #endif
 
                 inputLength -= nRead;
@@ -408,7 +445,9 @@ namespace Il2CppDumper
 
 #if CHECK_EOF
                 if (nRead == 0)
+                {
                     return -1;
+                }
 #endif
 
                 inputLength -= nRead;
@@ -459,7 +498,9 @@ namespace Il2CppDumper
                 var bufPos = inBufPos;
 
                 for (int c = fromBuf; c-- != 0;)
+                {
                     buffer[offset++] = buf[bufPos++];
+                }
 
                 inBufPos = bufPos;
                 nToRead -= fromBuf;
@@ -488,7 +529,9 @@ namespace Il2CppDumper
                     var bufPos = inBufPos;
 
                     for (int c = fromBuf; c-- != 0;)
+                    {
                         buffer[offset++] = buf[bufPos++];
+                    }
 
                     inBufPos = bufPos;
                     nToRead -= fromBuf;
@@ -520,20 +563,11 @@ namespace Il2CppDumper
             set => throw new NotSupportedException();
         }
 
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotSupportedException();
-        }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
 
-        public override void SetLength(long value)
-        {
-            throw new NotSupportedException();
-        }
+        public override void SetLength(long value) => throw new NotSupportedException();
 
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            throw new NotSupportedException();
-        }
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
         #endregion
     }

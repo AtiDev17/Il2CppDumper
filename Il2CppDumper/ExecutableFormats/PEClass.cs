@@ -2,7 +2,7 @@
 
 namespace Il2CppDumper
 {
-    public class DosHeader
+    internal sealed class DosHeader
     {
         public ushort Magic;
         public ushort Cblp;
@@ -27,7 +27,7 @@ namespace Il2CppDumper
         public uint Lfanew;
     }
 
-    public class FileHeader
+    internal sealed class FileHeader
     {
         public ushort Machine;
         public ushort NumberOfSections;
@@ -38,7 +38,7 @@ namespace Il2CppDumper
         public ushort Characteristics;
     }
 
-    public class OptionalHeader
+    internal sealed class OptionalHeader
     {
         public ushort Magic;
         public byte MajorLinkerVersion;
@@ -73,7 +73,7 @@ namespace Il2CppDumper
         //public DataDirectory[] DataDirectory;
     }
 
-    public class OptionalHeader64
+    internal sealed class OptionalHeader64
     {
         public ushort Magic;
         public byte MajorLinkerVersion;
@@ -113,7 +113,7 @@ namespace Il2CppDumper
         public uint Size;
     }*/
 
-    public class SectionHeader
+    internal sealed class SectionHeader
     {
         [ArrayLength(Length = 8)]
         public byte[] Name;
@@ -129,7 +129,7 @@ namespace Il2CppDumper
     }
 
     [Flags]
-    public enum SectionCharacteristics : uint
+    internal enum SectionCharacteristics : uint
     {
         IMAGE_SCN_MEM_EXECUTE = 0x20000000,
         IMAGE_SCN_MEM_READ = 0x40000000,

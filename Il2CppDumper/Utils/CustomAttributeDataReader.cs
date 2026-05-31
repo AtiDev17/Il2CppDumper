@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Il2CppDumper
 {
-    public class CustomAttributeDataReader : BinaryReader
+    internal sealed class CustomAttributeDataReader : BinaryReader
     {
         private readonly Il2CppExecutor executor;
         private readonly Metadata metadata;
@@ -18,7 +19,7 @@ namespace Il2CppDumper
             metadata = executor.metadata;
             Count = this.ReadCompressedUInt32();
             ctorBuffer = BaseStream.Position;
-            dataBuffer = BaseStream.Position + Count * 4;
+            dataBuffer = BaseStream.Position + (Count * 4);
         }
 
         public string GetStringCustomAttributeData()
@@ -57,19 +58,13 @@ namespace Il2CppDumper
             dataBuffer = BaseStream.Position;
 
 
-            var typeName = metadata.GetStringFromIndex(typeDef.nameIndex).Replace("Attribute", "");
-            if (argList.Count > 0)
-            {
-                return $"[{typeName}({string.Join(", ", argList)})]";
-            }
-            else
-            {
-                return $"[{typeName}]";
-            }
+            var typeName = metadata.GetStringFromIndex(typeDef.nameIndex).Replace("Attribute", "", StringComparison.Ordinal);
+            return argList.Count > 0 ? $"[{typeName}({string.Join(", ", argList)})]" : $"[{typeName}]";
         }
 
         private string AttributeDataToString(BlobValue blobValue)
         {
+            if (blobValue == null) return "null";
             if (blobValue.Value == null)
             {
                 return "null";
@@ -146,7 +141,9 @@ namespace Il2CppDumper
         private BlobValue ReadAttributeDataValue()
         {
             var type = executor.ReadEncodedTypeEnum(this, out var enumType);
-            executor.GetConstantValueFromBlob(type, this, out var blobValue);
+            _ = executor.GetConstantValueFromBlob(type, this, out var blobValue);
+            if (blobValue == null)
+                return null;
             if (enumType != null)
             {
                 blobValue.EnumType = enumType;

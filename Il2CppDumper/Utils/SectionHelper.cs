@@ -1,34 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 
 namespace Il2CppDumper
 {
-    public class SectionHelper
+    internal sealed class SectionHelper(Il2Cpp il2Cpp, int methodCount, int typeDefinitionsCount, long metadataUsagesCount, int imageCount)
     {
-        private List<SearchSection> exec;
-        private List<SearchSection> data;
-        private List<SearchSection> bss;
-        private readonly Il2Cpp il2Cpp;
-        private readonly int methodCount;
-        private readonly int typeDefinitionsCount;
-        private readonly long metadataUsagesCount;
-        private readonly int imageCount;
         private bool pointerInExec;
 
-        public List<SearchSection> Exec => exec;
-        public List<SearchSection> Data => data;
-        public List<SearchSection> Bss => bss;
-
-        public SectionHelper(Il2Cpp il2Cpp, int methodCount, int typeDefinitionsCount, long metadataUsagesCount, int imageCount)
-        {
-            this.il2Cpp = il2Cpp;
-            this.methodCount = methodCount;
-            this.typeDefinitionsCount = typeDefinitionsCount;
-            this.metadataUsagesCount = metadataUsagesCount;
-            this.imageCount = imageCount;
-        }
+        public List<SearchSection> Exec { get; set; }
+        public List<SearchSection> Data { get; set; }
+        public List<SearchSection> Bss { get; set; }
 
         public void SetSection(SearchSectionType type, Elf32_Phdr[] sections)
         {
@@ -144,23 +126,22 @@ namespace Il2CppDumper
             SetSection(type, secs);
         }
 
-        public void SetSection(SearchSectionType type, params SearchSection[] secs)
-        {
-            SetSection(type, secs.ToList());
-        }
+        public void SetSection(SearchSectionType type, params SearchSection[] secs) => SetSection(type, secs.ToList());
 
         private void SetSection(SearchSectionType type, List<SearchSection> secs)
         {
             switch (type)
             {
                 case SearchSectionType.Exec:
-                    exec = secs;
+                    Exec = secs;
                     break;
                 case SearchSectionType.Data:
-                    data = secs;
+                    Data = secs;
                     break;
                 case SearchSectionType.Bss:
-                    bss = secs;
+                    Bss = secs;
+                    break;
+                default:
                     break;
             }
         }
@@ -202,16 +183,12 @@ namespace Il2CppDumper
             {
                 return 0;
             }
-            if (il2Cpp.Version >= 27)
-            {
-                return FindMetadataRegistrationV21();
-            }
-            return FindMetadataRegistrationOld();
+            return il2Cpp.Version >= 27 ? FindMetadataRegistrationV21() : FindMetadataRegistrationOld();
         }
 
         private ulong FindCodeRegistrationOld()
         {
-            foreach (var section in data)
+            foreach (var section in Data)
             {
                 il2Cpp.Position = section.offset;
                 while (il2Cpp.Position < section.offsetEnd)
@@ -245,7 +222,7 @@ namespace Il2CppDumper
 
         private ulong FindMetadataRegistrationOld()
         {
-            foreach (var section in data)
+            foreach (var section in Data)
             {
                 il2Cpp.Position = section.offset;
                 var end = Math.Min(section.offsetEnd, il2Cpp.Length) - il2Cpp.PointerSize;
@@ -263,7 +240,7 @@ namespace Il2CppDumper
                                 var pointers = il2Cpp.ReadClassArray<ulong>(pointer, metadataUsagesCount);
                                 if (CheckPointerRangeBssVa(pointers))
                                 {
-                                    return addr - il2Cpp.PointerSize * 12 - section.offset + section.address;
+                                    return addr - (il2Cpp.PointerSize * 12) - section.offset + section.address;
                                 }
                             }
                         }
@@ -281,7 +258,7 @@ namespace Il2CppDumper
 
         private ulong FindMetadataRegistrationV21()
         {
-            foreach (var section in data)
+            foreach (var section in Data)
             {
                 il2Cpp.Position = section.offset;
                 var end = Math.Min(section.offsetEnd, il2Cpp.Length) - il2Cpp.PointerSize;
@@ -299,18 +276,10 @@ namespace Il2CppDumper
                                 if (CheckPointerRangeDataRa(pointer))
                                 {
                                     var pointers = il2Cpp.ReadClassArray<ulong>(pointer, typeDefinitionsCount);
-                                    bool flag;
-                                    if (pointerInExec)
-                                    {
-                                        flag = CheckPointerRangeExecVa(pointers);
-                                    }
-                                    else
-                                    {
-                                        flag = CheckPointerRangeDataVa(pointers);
-                                    }
+                                    var flag = pointerInExec ? CheckPointerRangeExecVa(pointers) : CheckPointerRangeDataVa(pointers);
                                     if (flag)
                                     {
-                                        return addr - il2Cpp.PointerSize * 10 - section.offset + section.address;
+                                        return addr - (il2Cpp.PointerSize * 10) - section.offset + section.address;
                                     }
                                 }
                             }
@@ -327,37 +296,19 @@ namespace Il2CppDumper
             return 0ul;
         }
 
-        private bool CheckPointerRangeDataRa(ulong pointer)
-        {
-            return data.Any(x => pointer >= x.offset && pointer <= x.offsetEnd);
-        }
+        private bool CheckPointerRangeDataRa(ulong pointer) => Data.Any(x => pointer >= x.offset && pointer <= x.offsetEnd);
 
-        private bool CheckPointerRangeExecVa(ulong[] pointers)
-        {
-            return pointers.All(x => exec.Any(y => x >= y.address && x <= y.addressEnd));
-        }
+        private bool CheckPointerRangeExecVa(ulong[] pointers) => pointers.All(x => Exec.Any(y => x >= y.address && x <= y.addressEnd));
 
-        private bool CheckPointerRangeDataVa(ulong[] pointers)
-        {
-            return pointers.All(x => data.Any(y => x >= y.address && x <= y.addressEnd));
-        }
+        private bool CheckPointerRangeDataVa(ulong[] pointers) => pointers.All(x => Data.Any(y => x >= y.address && x <= y.addressEnd));
 
-        private bool CheckPointerRangeBssVa(ulong[] pointers)
-        {
-            return pointers.All(x => bss.Any(y => x >= y.address && x <= y.addressEnd));
-        }
+        private bool CheckPointerRangeBssVa(ulong[] pointers) => pointers.All(x => Bss.Any(y => x >= y.address && x <= y.addressEnd));
 
-        private static readonly byte[] featureBytes = { 0x6D, 0x73, 0x63, 0x6F, 0x72, 0x6C, 0x69, 0x62, 0x2E, 0x64, 0x6C, 0x6C, 0x00 }; //mscorlib.dll
+        private static readonly byte[] featureBytes = [0x6D, 0x73, 0x63, 0x6F, 0x72, 0x6C, 0x69, 0x62, 0x2E, 0x64, 0x6C, 0x6C, 0x00]; //mscorlib.dll
 
-        private ulong FindCodeRegistrationData()
-        {
-            return FindCodeRegistration2019(data);
-        }
+        private ulong FindCodeRegistrationData() => FindCodeRegistration2019(Data);
 
-        private ulong FindCodeRegistrationExec()
-        {
-            return FindCodeRegistration2019(exec);
-        }
+        private ulong FindCodeRegistrationExec() => FindCodeRegistration2019(Exec);
 
         private ulong FindCodeRegistration2019(List<SearchSection> secs)
         {
@@ -376,20 +327,16 @@ namespace Il2CppDumper
                             {
                                 for (int i = imageCount - 1; i >= 0; i--)
                                 {
-                                    foreach (var refva3 in FindReference(refva2 - (ulong)i * il2Cpp.PointerSize))
+                                    foreach (var refva3 in FindReference(refva2 - ((ulong)i * il2Cpp.PointerSize)))
                                     {
                                         il2Cpp.Position = il2Cpp.MapVATR(refva3 - il2Cpp.PointerSize);
                                         if (il2Cpp.ReadIntPtr() == imageCount)
                                         {
                                             if (il2Cpp.Version >= 35)
                                             {
-                                                return refva3 - il2Cpp.PointerSize * 16;
+                                                return refva3 - (il2Cpp.PointerSize * 16);
                                             }
-                                        if (il2Cpp.Version >= 29)
-                                            {
-                                                return refva3 - il2Cpp.PointerSize * 14;
-                                            }
-                                            return refva3 - il2Cpp.PointerSize * 13;
+                                            return il2Cpp.Version >= 29 ? refva3 - (il2Cpp.PointerSize * 14) : refva3 - (il2Cpp.PointerSize * 13);
                                         }
                                     }
                                 }
@@ -398,9 +345,9 @@ namespace Il2CppDumper
                             {
                                 for (int i = 0; i < imageCount; i++)
                                 {
-                                    foreach (var refva3 in FindReference(refva2 - (ulong)i * il2Cpp.PointerSize))
+                                    foreach (var refva3 in FindReference(refva2 - ((ulong)i * il2Cpp.PointerSize)))
                                     {
-                                        return refva3 - il2Cpp.PointerSize * 13;
+                                        return refva3 - (il2Cpp.PointerSize * 13);
                                     }
                                 }
                             }
@@ -413,7 +360,7 @@ namespace Il2CppDumper
 
         private IEnumerable<ulong> FindReference(ulong addr)
         {
-            foreach (var dataSec in data)
+            foreach (var dataSec in Data)
             {
                 var position = dataSec.offset;
                 var end = Math.Min(dataSec.offsetEnd, il2Cpp.Length) - il2Cpp.PointerSize;

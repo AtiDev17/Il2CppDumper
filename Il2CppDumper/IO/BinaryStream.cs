@@ -7,14 +7,12 @@ using System.Text;
 
 namespace Il2CppDumper
 {
-    public class BinaryStream : IDisposable
+    internal class BinaryStream : IDisposable
     {
         public double Version;
         public bool Is32Bit;
         public ulong ImageBase;
         private readonly Stream stream;
-        private readonly BinaryReader reader;
-        private readonly BinaryWriter writer;
         private readonly MethodInfo readClass;
         private readonly MethodInfo readClassArray;
         private readonly Dictionary<Type, MethodInfo> genericMethodCache;
@@ -24,68 +22,69 @@ namespace Il2CppDumper
         public BinaryStream(Stream input)
         {
             stream = input;
-            reader = new BinaryReader(stream, Encoding.UTF8, true);
-            if (stream.CanWrite) {
-                writer = new BinaryWriter(stream, Encoding.UTF8, true);
+            Reader = new BinaryReader(stream, Encoding.UTF8, true);
+            if (stream.CanWrite)
+            {
+                Writer = new BinaryWriter(stream, Encoding.UTF8, true);
             }
-            readClass = GetType().GetMethod("ReadClass", Type.EmptyTypes);
-            readClassArray = GetType().GetMethod("ReadClassArray", new[] { typeof(long) });
-            genericMethodCache = new();
-            attributeCache = new();
-            fieldCache = new();
+            readClass = GetType().GetMethod("ReadClass", []);
+            readClassArray = GetType().GetMethod("ReadClassArray", [typeof(long)]);
+            genericMethodCache = [];
+            attributeCache = [];
+            fieldCache = [];
         }
 
-        public bool ReadBoolean() => reader.ReadBoolean();
+        public bool ReadBoolean() => Reader.ReadBoolean();
 
-        public byte ReadByte() => reader.ReadByte();
+        public byte ReadByte() => Reader.ReadByte();
 
-        public byte[] ReadBytes(int count) => reader.ReadBytes(count);
+        public byte[] ReadBytes(int count) => Reader.ReadBytes(count);
 
-        public sbyte ReadSByte() => reader.ReadSByte();
+        public sbyte ReadSByte() => Reader.ReadSByte();
 
-        public short ReadInt16() => reader.ReadInt16();
+        public short ReadInt16() => Reader.ReadInt16();
 
-        public ushort ReadUInt16() => reader.ReadUInt16();
+        public ushort ReadUInt16() => Reader.ReadUInt16();
 
-        public int ReadInt32() => reader.ReadInt32();
+        public int ReadInt32() => Reader.ReadInt32();
 
-        public uint ReadUInt32() => reader.ReadUInt32();
+        public uint ReadUInt32() => Reader.ReadUInt32();
 
-        public long ReadInt64() => reader.ReadInt64();
+        public long ReadInt64() => Reader.ReadInt64();
 
-        public ulong ReadUInt64() => reader.ReadUInt64();
+        public ulong ReadUInt64() => Reader.ReadUInt64();
 
-        public float ReadSingle() => reader.ReadSingle();
+        public float ReadSingle() => Reader.ReadSingle();
 
-        public double ReadDouble() => reader.ReadDouble();
+        public double ReadDouble() => Reader.ReadDouble();
 
-        public uint ReadCompressedUInt32() => reader.ReadCompressedUInt32();
+        public uint ReadCompressedUInt32() => Reader.ReadCompressedUInt32();
 
-        public int ReadCompressedInt32() => reader.ReadCompressedInt32();
+        public int ReadCompressedInt32() => Reader.ReadCompressedInt32();
 
-        public uint ReadULeb128() => reader.ReadULeb128();
+        public uint ReadULeb128() => Reader.ReadULeb128();
 
-        public void Write(bool value) => writer.Write(value);
+        public void Write(bool value) => Writer.Write(value);
 
-        public void Write(byte value) => writer.Write(value);
+        public void Write(byte value) => Writer.Write(value);
 
-        public void Write(sbyte value) => writer.Write(value);
+        public void Write(sbyte value) => Writer.Write(value);
 
-        public void Write(short value) => writer.Write(value);
+        public void Write(short value) => Writer.Write(value);
 
-        public void Write(ushort value) => writer.Write(value);
+        public void Write(ushort value) => Writer.Write(value);
 
-        public void Write(int value) => writer.Write(value);
+        public void Write(int value) => Writer.Write(value);
 
-        public void Write(uint value) => writer.Write(value);
+        public void Write(uint value) => Writer.Write(value);
 
-        public void Write(long value) => writer.Write(value);
+        public void Write(long value) => Writer.Write(value);
 
-        public void Write(ulong value) => writer.Write(value);
+        public void Write(ulong value) => Writer.Write(value);
 
-        public void Write(float value) => writer.Write(value);
+        public void Write(float value) => Writer.Write(value);
 
-        public void Write(double value) => writer.Write(value);
+        public void Write(double value) => Writer.Write(value);
 
         public ulong Position
         {
@@ -137,7 +136,7 @@ namespace Il2CppDumper
                     {
                         if (Attribute.IsDefined(i, typeof(VersionAttribute)))
                         {
-                            versionAttributes = i.GetCustomAttributes<VersionAttribute>().ToArray();
+                            versionAttributes = [.. i.GetCustomAttributes<VersionAttribute>()];
                             attributeCache.Add(i, versionAttributes);
                         }
                     }
@@ -175,7 +174,7 @@ namespace Il2CppDumper
                             methodInfo = readClassArray.MakeGenericMethod(fieldType.GetElementType());
                             genericMethodCache.Add(fieldType, methodInfo);
                         }
-                        i.SetValue(t, methodInfo.Invoke(this, new object[] { arrayLengthAttribute.Length }));
+                        i.SetValue(t, methodInfo.Invoke(this, [arrayLengthAttribute.Length]));
                     }
                     else if (fieldType == typeof(TypeIndex))
                     {
@@ -225,21 +224,18 @@ namespace Il2CppDumper
                     case 1:
                         {
                             uint value = ReadByte();
-                            if (value == Byte.MaxValue) return new TypeIndex(-1);
-                            return new TypeIndex((int)value);
+                            return value == Byte.MaxValue ? new TypeIndex(-1) : new TypeIndex((int)value);
                         }
                     case 2:
                         {
                             uint value = ReadUInt16();
-                            if (value == UInt16.MaxValue) return new TypeIndex(-1);
-                            return new TypeIndex((int)value);
+                            return value == UInt16.MaxValue ? new TypeIndex(-1) : new TypeIndex((int)value);
                         }
                     case 4:
                     default:
                         {
                             uint value = ReadUInt32();
-                            if (value == UInt32.MaxValue) return new TypeIndex(-1);
-                            return new TypeIndex((int)value);
+                            return value == UInt32.MaxValue ? new TypeIndex(-1) : new TypeIndex((int)value);
                         }
                 }
             }
@@ -259,21 +255,18 @@ namespace Il2CppDumper
                     case 1:
                         {
                             uint value = ReadByte();
-                            if (value == Byte.MaxValue) return new TypeDefinitionIndex(-1);
-                            return new TypeDefinitionIndex((int)value);
+                            return value == Byte.MaxValue ? new TypeDefinitionIndex(-1) : new TypeDefinitionIndex((int)value);
                         }
                     case 2:
                         {
                             uint value = ReadUInt16();
-                            if (value == UInt16.MaxValue) return new TypeDefinitionIndex(-1);
-                            return new TypeDefinitionIndex((int)value);
+                            return value == UInt16.MaxValue ? new TypeDefinitionIndex(-1) : new TypeDefinitionIndex((int)value);
                         }
                     case 4:
                     default:
                         {
                             uint value = ReadUInt32();
-                            if (value == UInt32.MaxValue) return new TypeDefinitionIndex(-1);
-                            return new TypeDefinitionIndex((int)value);
+                            return value == UInt32.MaxValue ? new TypeDefinitionIndex(-1) : new TypeDefinitionIndex((int)value);
                         }
                 }
             }
@@ -293,21 +286,18 @@ namespace Il2CppDumper
                     case 1:
                         {
                             uint value = ReadByte();
-                            if (value == Byte.MaxValue) return new GenericContainerIndex(-1);
-                            return new GenericContainerIndex((int)value);
+                            return value == Byte.MaxValue ? new GenericContainerIndex(-1) : new GenericContainerIndex((int)value);
                         }
                     case 2:
                         {
                             uint value = ReadUInt16();
-                            if (value == UInt16.MaxValue) return new GenericContainerIndex(-1);
-                            return new GenericContainerIndex((int)value);
+                            return value == UInt16.MaxValue ? new GenericContainerIndex(-1) : new GenericContainerIndex((int)value);
                         }
                     case 4:
                     default:
                         {
                             uint value = ReadUInt32();
-                            if (value == UInt32.MaxValue) return new GenericContainerIndex(-1);
-                            return new GenericContainerIndex((int)value);
+                            return value == UInt32.MaxValue ? new GenericContainerIndex(-1) : new GenericContainerIndex((int)value);
                         }
                 }
             }
@@ -327,21 +317,18 @@ namespace Il2CppDumper
                     case 1:
                         {
                             uint value = ReadByte();
-                            if (value == Byte.MaxValue) return new ParameterIndex(-1);
-                            return new ParameterIndex((int)value);
+                            return value == Byte.MaxValue ? new ParameterIndex(-1) : new ParameterIndex((int)value);
                         }
                     case 2:
                         {
                             uint value = ReadUInt16();
-                            if (value == UInt16.MaxValue) return new ParameterIndex(-1);
-                            return new ParameterIndex((int)value);
+                            return value == UInt16.MaxValue ? new ParameterIndex(-1) : new ParameterIndex((int)value);
                         }
                     case 4:
                     default:
                         {
                             uint value = ReadUInt32();
-                            if (value == UInt32.MaxValue) return new ParameterIndex(-1);
-                            return new ParameterIndex((int)value);
+                            return value == UInt32.MaxValue ? new ParameterIndex(-1) : new ParameterIndex((int)value);
                         }
                 }
             }
@@ -357,10 +344,7 @@ namespace Il2CppDumper
             return t;
         }
 
-        public T[] ReadClassArray<T>(ulong addr, ulong count) where T : new()
-        {
-            return ReadClassArray<T>(addr, (long)count);
-        }
+        public T[] ReadClassArray<T>(ulong addr, ulong count) where T : new() => ReadClassArray<T>(addr, (long)count);
 
         public T[] ReadClassArray<T>(ulong addr, long count) where T : new()
         {
@@ -374,35 +358,28 @@ namespace Il2CppDumper
             var bytes = new List<byte>();
             byte b;
             while ((b = ReadByte()) != 0)
+            {
                 bytes.Add(b);
-            return Encoding.UTF8.GetString(bytes.ToArray());
+            }
+            return Encoding.UTF8.GetString([.. bytes]);
         }
 
-        public long ReadIntPtr()
-        {
-            return Is32Bit ? ReadInt32() : ReadInt64();
-        }
+        public long ReadIntPtr() => Is32Bit ? ReadInt32() : ReadInt64();
 
-        public virtual ulong ReadUIntPtr()
-        {
-            return Is32Bit ? ReadUInt32() : ReadUInt64();
-        }
+        public virtual ulong ReadUIntPtr() => Is32Bit ? ReadUInt32() : ReadUInt64();
 
-        public ulong PointerSize
-        {
-            get => Is32Bit ? 4ul : 8ul;
-        }
+        public ulong PointerSize => Is32Bit ? 4ul : 8ul;
 
-        public BinaryReader Reader => reader;
+        public BinaryReader Reader { get; }
 
-        public BinaryWriter Writer => writer;
+        public BinaryWriter Writer { get; }
 
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
-                reader.Dispose();
-                writer.Dispose();
+                Reader.Dispose();
+                Writer?.Dispose();
                 stream.Close();
             }
         }

@@ -1,16 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 
 namespace Il2CppDumper
 {
-    public class CBinaryWriter : BinaryWriter
+    internal sealed class CBinaryWriter(Stream stream, Encoding encoding) : BinaryWriter(stream, encoding)
     {
-        public CBinaryWriter(Stream stream, Encoding encoding) : base(stream, encoding)
-        {
-        }
 
         public void WriteString0(string str)
         {
@@ -19,7 +17,7 @@ namespace Il2CppDumper
                 Write(0);
                 return;
             }
-            if (str.Any(x => x > byte.MaxValue || x == 0))
+            if (str.Any(x => x is > (char)byte.MaxValue or '\0'))
             {
                 var lastIndex = 0;
                 var builder = new StringBuilder();
@@ -35,9 +33,9 @@ namespace Il2CppDumper
                         var len = index - lastIndex;
                         if (len > 0)
                         {
-                            builder.Append(str.Substring(lastIndex, len));
+                            _ = builder.Append(str.AsSpan(lastIndex, len));
                         }
-                        builder.AppendFormat("\\u{0:X}", (int)ch);
+                        _ = builder.AppendFormat(CultureInfo.InvariantCulture, "\\u{0:X}", (int)ch);
                         lastIndex = index + 1;
                     }
                 }
@@ -70,18 +68,17 @@ namespace Il2CppDumper
         }
     }
 
-    public static class ScriptBin
+    internal static class ScriptBin
     {
         public static void WriteFile(string filename, ScriptJson json)
         {
             using var file = File.Create(filename);
-            var binary = new CBinaryWriter(file, Encoding.ASCII);
+            using var binary = new CBinaryWriter(file, Encoding.ASCII);
             binary.Write(json.ScriptMethod, Write);
             binary.Write(json.ScriptString, Write);
             binary.Write(json.ScriptMetadata, Write);
             binary.Write(json.ScriptMetadataMethod, Write);
             binary.Write(json.Addresses, Write);
-            file.Close();
         }
 
         private static void Write(CBinaryWriter writer, ScriptMethod o)
@@ -112,9 +109,6 @@ namespace Il2CppDumper
             writer.Write(o.MethodAddress);
         }
 
-        private static void Write(CBinaryWriter writer, ulong o)
-        {
-            writer.Write(o);
-        }
+        private static void Write(CBinaryWriter writer, ulong o) => writer.Write(o);
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Il2CppDumper
 {
-    static class ArmUtils
+    internal static class ArmUtils
     {
         public static uint DecodeMov(byte[] asm)
         {
@@ -33,7 +33,9 @@ namespace Il2CppDumper
             var bin = inst.HexToBin();
             var uint64 = Convert.ToUInt64(bin.Substring(10, 12), 2);
             if (bin[9] == '1')
+            {
                 uint64 <<= 12;
+            }
             return uint64;
         }
 

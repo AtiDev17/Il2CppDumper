@@ -7,11 +7,11 @@ using static Il2CppDumper.ArmUtils;
 
 namespace Il2CppDumper
 {
-    public sealed class Macho64 : Il2Cpp
+    internal sealed class Macho64 : Il2Cpp
     {
-        private static readonly byte[] FeatureBytes1 = { 0x2, 0x0, 0x80, 0xD2 };//MOV X2, #0
-        private static readonly byte[] FeatureBytes2 = { 0x3, 0x0, 0x80, 0x52 };//MOV W3, #0
-        private readonly List<MachoSection64Bit> sections = new();
+        private static readonly byte[] FeatureBytes1 = [0x2, 0x0, 0x80, 0xD2];//MOV X2, #0
+        private static readonly byte[] FeatureBytes2 = [0x3, 0x0, 0x80, 0x52];//MOV W3, #0
+        private readonly List<MachoSection64Bit> sections = [];
         private readonly ulong vmaddr;
 
         public Macho64(Stream stream) : base(stream)
@@ -61,6 +61,8 @@ namespace Il2CppDumper
                             Console.WriteLine("ERROR: This Mach-O executable is encrypted and cannot be processed.");
                         }
                         break;
+                    default:
+                        break;
                 }
                 Position = pos + cmdsize;//skip
             }
@@ -73,11 +75,7 @@ namespace Il2CppDumper
             {
                 return 0;
             }
-            if (section.sectname == "__bss")
-            {
-                throw new Exception();
-            }
-            return addr - section.addr + section.offset;
+            return section.sectname == "__bss" ? throw new InvalidOperationException() : addr - section.addr + section.offset;
         }
 
         public override ulong MapRTVA(ulong addr)
@@ -87,11 +85,7 @@ namespace Il2CppDumper
             {
                 return 0;
             }
-            if (section.sectname == "__bss")
-            {
-                throw new Exception();
-            }
-            return addr - section.offset + section.addr;
+            return section.sectname == "__bss" ? throw new InvalidOperationException() : addr - section.offset + section.addr;
         }
 
         public override bool Search()
@@ -101,7 +95,10 @@ namespace Il2CppDumper
             if (Version < 23)
             {
                 var __mod_init_func = sections.FirstOrDefault(x => x.sectname == "__mod_init_func");
-                if (__mod_init_func == null) return false;
+                if (__mod_init_func == null)
+                {
+                    return false;
+                }
                 var addrs = ReadClassArray<ulong>(__mod_init_func.offset, __mod_init_func.size / 8);
                 foreach (var i in addrs)
                 {
@@ -168,7 +165,10 @@ namespace Il2CppDumper
                  * B sub
                  */
                 var __mod_init_func = sections.FirstOrDefault(x => x.sectname == "__mod_init_func");
-                if (__mod_init_func == null) return false;
+                if (__mod_init_func == null)
+                {
+                    return false;
+                }
                 var addrs = ReadClassArray<ulong>(__mod_init_func.offset, __mod_init_func.size / 8);
                 foreach (var i in addrs)
                 {
@@ -206,7 +206,10 @@ namespace Il2CppDumper
                  * B sub
                  */
                 var __mod_init_func = sections.FirstOrDefault(x => x.sectname == "__mod_init_func");
-                if (__mod_init_func == null) return false;
+                if (__mod_init_func == null)
+                {
+                    return false;
+                }
                 var addrs = ReadClassArray<ulong>(__mod_init_func.offset, __mod_init_func.size / 8);
                 foreach (var i in addrs)
                 {
@@ -251,19 +254,13 @@ namespace Il2CppDumper
             return AutoPlusInit(codeRegistration, metadataRegistration);
         }
 
-        public override bool SymbolSearch()
-        {
-            return false;
-        }
+        public override bool SymbolSearch() => false;
 
-        public override ulong GetRVA(ulong pointer)
-        {
-            return pointer - vmaddr;
-        }
+        public override ulong GetRVA(ulong pointer) => pointer - vmaddr;
 
         public override SectionHelper GetSectionHelper(int methodCount, int typeDefinitionsCount, int imageCount)
         {
-            var data = sections.Where(x => x.sectname == "__const" || x.sectname == "__cstring" || x.sectname == "__data").ToArray();
+            var data = sections.Where(x => x.sectname is "__const" or "__cstring" or "__data").ToArray();
             var code = sections.Where(x => x.flags == 0x80000400).ToArray();
             var bss = sections.Where(x => x.flags == 1u).ToArray();
             var sectionHelper = new SectionHelper(this, methodCount, typeDefinitionsCount, metadataUsagesCount, imageCount);
@@ -282,8 +279,11 @@ namespace Il2CppDumper
             {
                 var addr = Position;
                 var section = sections.FirstOrDefault(x => addr >= x.offset && addr <= x.offset + x.size);
-                if (section == null) return pointer;
-                if (section.sectname == "__const" || section.sectname == "__data")
+                if (section == null)
+                {
+                    return pointer;
+                }
+                if (section.sectname is "__const" or "__data")
                 {
                     var rva = pointer - vmaddr;
                     rva &= 0xFFFFFFFF;

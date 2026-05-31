@@ -1,6 +1,6 @@
 ﻿namespace Il2CppDumper
 {
-    public class AttributeArgument
+    internal sealed class AttributeArgument
     {
         public BlobValue Value;
         public int Index;

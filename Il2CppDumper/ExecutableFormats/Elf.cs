@@ -6,7 +6,7 @@ using static Il2CppDumper.ElfConstants;
 
 namespace Il2CppDumper
 {
-    public sealed class Elf : ElfBase
+    internal sealed class Elf : ElfBase
     {
         private Elf32_Ehdr elfHeader;
         private Elf32_Phdr[] programSegment;
@@ -20,7 +20,7 @@ namespace Il2CppDumper
         * ADD R0, X, X
         * ADD R2, X, X
         */
-        private static readonly string ARMFeatureBytes = "? 0x10 ? 0xE7 ? 0x00 ? 0xE0 ? 0x20 ? 0xE0";
+        private const string ARMFeatureBytes = "? 0x10 ? 0xE7 ? 0x00 ? 0xE0 ? 0x20 ? 0xE0";
         // x86 ELF feature bytes pattern is not available - Search() returns false for x86
 
         public Elf(Stream stream) : base(stream)
@@ -70,13 +70,9 @@ namespace Il2CppDumper
                 {
                     names.Add(ReadStringToNull(shstrndx + section.sh_name));
                 }
-                if (!names.Contains(".text"))
-                {
-                    return false;
-                }
-                return true;
+                return names.Contains(".text");
             }
-            catch (Exception ex)
+catch (Exception ex)
             {
                 Console.WriteLine($"CheckSection error: {ex.Message}");
                 return false;
@@ -86,21 +82,13 @@ namespace Il2CppDumper
         public override ulong MapVATR(ulong addr)
         {
             var phdr = programSegment.FirstOrDefault(x => addr >= x.p_vaddr && addr <= x.p_vaddr + x.p_memsz);
-            if (phdr == null)
-            {
-                return 0;
-            }
-            return addr - phdr.p_vaddr + phdr.p_offset;
+            return phdr == null ? 0 : addr - phdr.p_vaddr + phdr.p_offset;
         }
 
         public override ulong MapRTVA(ulong addr)
         {
             var phdr = programSegment.FirstOrDefault(x => addr >= x.p_offset && addr <= x.p_offset + x.p_filesz);
-            if (phdr == null)
-            {
-                return 0;
-            }
-            return addr - phdr.p_offset + phdr.p_vaddr;
+            return phdr == null ? 0 : addr - phdr.p_offset + phdr.p_vaddr;
         }
 
         public override bool Search()
@@ -184,13 +172,15 @@ namespace Il2CppDumper
             foreach (var symbol in symbolTable)
             {
                 var name = ReadStringToNull(dynstrOffset + symbol.st_name);
-                switch (name)
+switch (name)
                 {
                     case "g_CodeRegistration":
                         codeRegistration = symbol.st_value;
                         break;
                     case "g_MetadataRegistration":
                         metadataRegistration = symbol.st_value;
+                        break;
+                    default:
                         break;
                 }
             }
@@ -238,14 +228,16 @@ namespace Il2CppDumper
                     }
                     else
                     {
-                        var chains_base_address = buckets_address + 4 * nbuckets;
-                        Position = chains_base_address + (last_symbol - symoffset) * 4;
+                        var chains_base_address = buckets_address + (4 * nbuckets);
+                        Position = chains_base_address + ((last_symbol - symoffset) * 4);
                         while (true)
                         {
                             var chain_entry = ReadUInt32();
                             ++last_symbol;
                             if ((chain_entry & 1) != 0)
+                            {
                                 break;
+                            }
                         }
                         symbolCount = last_symbol;
                     }
@@ -253,7 +245,7 @@ namespace Il2CppDumper
                 var dynsymOffset = MapVATR(dynamicSection.First(x => x.d_tag == DT_SYMTAB).d_un);
                 symbolTable = ReadClassArray<Elf32_Sym>(dynsymOffset, symbolCount);
             }
-            catch (Exception ex)
+catch (Exception ex)
             {
                 Console.WriteLine($"ReadSymbol error: {ex.Message}");
             }
@@ -272,7 +264,7 @@ namespace Il2CppDumper
                 {
                     var type = rel.r_info & 0xff;
                     var sym = rel.r_info >> 8;
-                    switch (type)
+switch (type)
                     {
                         case R_386_32 when isx86:
                         case R_ARM_ABS32 when !isx86:
@@ -282,10 +274,12 @@ namespace Il2CppDumper
                                 Write(symbol.st_value);
                                 break;
                             }
+                        default:
+                            break;
                     }
                 }
             }
-            catch (Exception ex)
+catch (Exception ex)
             {
                 Console.WriteLine($"RelocationProcessing error: {ex.Message}");
             }
@@ -302,21 +296,23 @@ namespace Il2CppDumper
                     return true;
                 }
                 //JNI_OnLoad
-            var strtabEntry = dynamicSection.FirstOrDefault(x => x.d_tag == DT_STRTAB);
-            if (strtabEntry == null)
-            {
-                Console.WriteLine("ERROR: DT_STRTAB not found");
-                return false;
-            }
-            var dynstrOffset = MapVATR(strtabEntry.d_un);
+                var strtabEntry = dynamicSection.FirstOrDefault(x => x.d_tag == DT_STRTAB);
+                if (strtabEntry == null)
+                {
+                    Console.WriteLine("ERROR: DT_STRTAB not found");
+                    return false;
+                }
+                var dynstrOffset = MapVATR(strtabEntry.d_un);
                 foreach (var symbol in symbolTable)
                 {
                     var name = ReadStringToNull(dynstrOffset + symbol.st_name);
-                    switch (name)
+switch (name)
                     {
                         case "JNI_OnLoad":
                             Console.WriteLine("WARNING: find JNI_OnLoad");
                             return true;
+                        default:
+                            break;
                     }
                 }
                 if (sectionTable != null && sectionTable.Any(x => x.sh_type == SHT_LOUSER))
@@ -325,7 +321,7 @@ namespace Il2CppDumper
                     return true;
                 }
             }
-            catch (Exception ex)
+catch (Exception ex)
             {
                 Console.WriteLine($"CheckProtection error: {ex.Message}");
             }
@@ -334,18 +330,14 @@ namespace Il2CppDumper
 
         public override ulong GetRVA(ulong pointer)
         {
-            if (IsDumped)
-            {
-                return pointer - ImageBase;
-            }
-            return pointer;
+            return IsDumped ? pointer - ImageBase : pointer;
         }
 
         private void FixedProgramSegment()
         {
             for (uint i = 0; i < programSegment.Length; i++)
             {
-                Position = elfHeader.e_phoff + i * 32u + 4u;
+                Position = elfHeader.e_phoff + (i * 32u) + 4u;
                 var phdr = programSegment[i];
                 phdr.p_offset = phdr.p_vaddr;
                 Write(phdr.p_offset);
@@ -361,9 +353,9 @@ namespace Il2CppDumper
         {
             for (uint i = 0; i < dynamicSection.Length; i++)
             {
-                Position = pt_dynamic.p_offset + i * 8 + 4;
+                Position = pt_dynamic.p_offset + (i * 8) + 4;
                 var dyn = dynamicSection[i];
-                switch (dyn.d_tag)
+switch (dyn.d_tag)
                 {
                     case DT_PLTGOT:
                     case DT_HASH:
@@ -379,10 +371,11 @@ namespace Il2CppDumper
                         dyn.d_un += (uint)ImageBase;
                         Write(dyn.d_un);
                         break;
+                    default:
+                        break;
                 }
             }
         }
-
         public override SectionHelper GetSectionHelper(int methodCount, int typeDefinitionsCount, int imageCount)
         {
             var dataList = new List<Elf32_Phdr>();
@@ -391,7 +384,7 @@ namespace Il2CppDumper
             {
                 if (phdr.p_memsz != 0ul)
                 {
-                    switch (phdr.p_flags)
+switch (phdr.p_flags)
                     {
                         case 1u: //PF_X
                         case 3u:
@@ -403,6 +396,8 @@ namespace Il2CppDumper
                         case 4u:
                         case 6u:
                             dataList.Add(phdr);
+                            break;
+                        default:
                             break;
                     }
                 }

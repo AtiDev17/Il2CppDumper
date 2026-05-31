@@ -2,9 +2,8 @@
 
 namespace Il2CppDumper
 {
-    public abstract class ElfBase : Il2Cpp
+    internal abstract class ElfBase(Stream stream) : Il2Cpp(stream)
     {
-        protected ElfBase(Stream stream) : base(stream) { }
         protected abstract void Load();
         protected abstract bool CheckSection();
 

@@ -2,19 +2,20 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using static Il2CppDumper.ElfConstants;
 
 namespace Il2CppDumper
 {
-    public sealed class NSO : Il2Cpp
+    internal sealed class NSO : Il2Cpp
     {
         private readonly NSOHeader header;
         private readonly bool isTextCompressed;
         private readonly bool isRoDataCompressed;
         private readonly bool isDataCompressed;
-        private readonly List<NSOSegmentHeader> segments = new();
+        private readonly List<NSOSegmentHeader> segments = [];
         private Elf64_Sym[] symbolTable;
-        private readonly List<Elf64_Dyn> dynamicSection = new();
+        private readonly List<Elf64_Dyn> dynamicSection = [];
         private bool IsCompressed => isTextCompressed || isRoDataCompressed || isDataCompressed;
 
 
@@ -143,14 +144,16 @@ namespace Il2CppDumper
                     }
                     else
                     {
-                        var chains_base_address = buckets_address + 4 * nbuckets;
-                        Position = chains_base_address + (last_symbol - symoffset) * 4;
+                        var chains_base_address = buckets_address + (4 * nbuckets);
+                        Position = chains_base_address + ((last_symbol - symoffset) * 4);
                         while (true)
                         {
                             var chain_entry = ReadUInt32();
                             ++last_symbol;
                             if ((chain_entry & 1) != 0)
+                            {
                                 break;
+                            }
                         }
                         symbolCount = last_symbol;
                     }
@@ -182,7 +185,7 @@ namespace Il2CppDumper
                             {
                                 var symbol = symbolTable[sym];
                                 Position = MapVATR(rela.r_offset);
-                                Write(symbol.st_value + (ulong)rela.r_addend);
+                                Write(symbol.st_value + rela.r_addend);
                                 break;
                             }
                         case R_AARCH64_RELATIVE:
@@ -191,6 +194,8 @@ namespace Il2CppDumper
                                 Write(rela.r_addend);
                                 break;
                             }
+                        default:
+                            break;
                     }
                 }
             }
@@ -203,27 +208,16 @@ namespace Il2CppDumper
         public override ulong MapVATR(ulong addr)
         {
             var segment = segments.FirstOrDefault(x => addr >= x.MemoryOffset && addr <= x.MemoryOffset + x.DecompressedSize);
-            if (segment == null)
-            {
-                return 0;
-            }
-            return addr - segment.MemoryOffset + segment.FileOffset;
+            return segment == null ? 0 : addr - segment.MemoryOffset + segment.FileOffset;
         }
 
         public override ulong MapRTVA(ulong addr)
         {
             var segment = segments.FirstOrDefault(x => addr >= x.FileOffset && addr <= x.FileOffset + x.DecompressedSize);
-            if (segment == null)
-            {
-                return 0;
-            }
-            return addr - segment.FileOffset + segment.MemoryOffset;
+            return segment == null ? 0 : addr - segment.FileOffset + segment.MemoryOffset;
         }
 
-        public override bool Search()
-        {
-            return false;
-        }
+        public override bool Search() => false;
 
         public override bool PlusSearch(int methodCount, int typeDefinitionsCount, int imageCount)
         {
@@ -233,93 +227,91 @@ namespace Il2CppDumper
             return AutoPlusInit(codeRegistration, metadataRegistration);
         }
 
-        public override bool SymbolSearch()
-        {
-            return false;
-        }
+        public override bool SymbolSearch() => false;
 
         public NSO UnCompress()
         {
             if (isTextCompressed || isRoDataCompressed || isDataCompressed)
             {
                 var unCompressedStream = new MemoryStream();
-                var writer = new BinaryWriter(unCompressedStream);
-                writer.Write(header.Magic);
-                writer.Write(header.Version);
-                writer.Write(header.Reserved);
-                writer.Write(0); //Flags
-                writer.Write(header.TextSegment.FileOffset);
-                writer.Write(header.TextSegment.MemoryOffset);
-                writer.Write(header.TextSegment.DecompressedSize);
-                writer.Write(header.ModuleOffset);
-                var roOffset = header.TextSegment.FileOffset + header.TextSegment.DecompressedSize;
-                writer.Write(roOffset); //header.RoDataSegment.FileOffset
-                writer.Write(header.RoDataSegment.MemoryOffset);
-                writer.Write(header.RoDataSegment.DecompressedSize);
-                writer.Write(header.ModuleFileSize);
-                writer.Write(roOffset + header.RoDataSegment.DecompressedSize); //header.DataSegment.FileOffset
-                writer.Write(header.DataSegment.MemoryOffset);
-                writer.Write(header.DataSegment.DecompressedSize);
-                writer.Write(header.BssSize);
-                writer.Write(header.DigestBuildID);
-                writer.Write(header.TextCompressedSize);
-                writer.Write(header.RoDataCompressedSize);
-                writer.Write(header.DataCompressedSize);
-                writer.Write(header.Padding);
-                writer.Write(header.APIInfo.RegionRoDataOffset);
-                writer.Write(header.APIInfo.RegionSize);
-                writer.Write(header.DynStr.RegionRoDataOffset);
-                writer.Write(header.DynStr.RegionSize);
-                writer.Write(header.DynSym.RegionRoDataOffset);
-                writer.Write(header.DynSym.RegionSize);
-                writer.Write(header.TextHash);
-                writer.Write(header.RoDataHash);
-                writer.Write(header.DataHash);
-                writer.BaseStream.Position = header.TextSegment.FileOffset;
-                Position = header.TextSegment.FileOffset;
-                var textBytes = ReadBytes((int)header.TextCompressedSize);
-                if (isTextCompressed)
+                using (var writer = new BinaryWriter(unCompressedStream, Encoding.UTF8, true))
                 {
-                    var unCompressedData = new byte[header.TextSegment.DecompressedSize];
-                    using (var decoder = new Lz4DecoderStream(new MemoryStream(textBytes)))
+                    writer.Write(header.Magic);
+                    writer.Write(header.Version);
+                    writer.Write(header.Reserved);
+                    writer.Write(0); //Flags
+                    writer.Write(header.TextSegment.FileOffset);
+                    writer.Write(header.TextSegment.MemoryOffset);
+                    writer.Write(header.TextSegment.DecompressedSize);
+                    writer.Write(header.ModuleOffset);
+                    var roOffset = header.TextSegment.FileOffset + header.TextSegment.DecompressedSize;
+                    writer.Write(roOffset); //header.RoDataSegment.FileOffset
+                    writer.Write(header.RoDataSegment.MemoryOffset);
+                    writer.Write(header.RoDataSegment.DecompressedSize);
+                    writer.Write(header.ModuleFileSize);
+                    writer.Write(roOffset + header.RoDataSegment.DecompressedSize); //header.DataSegment.FileOffset
+                    writer.Write(header.DataSegment.MemoryOffset);
+                    writer.Write(header.DataSegment.DecompressedSize);
+                    writer.Write(header.BssSize);
+                    writer.Write(header.DigestBuildID);
+                    writer.Write(header.TextCompressedSize);
+                    writer.Write(header.RoDataCompressedSize);
+                    writer.Write(header.DataCompressedSize);
+                    writer.Write(header.Padding);
+                    writer.Write(header.APIInfo.RegionRoDataOffset);
+                    writer.Write(header.APIInfo.RegionSize);
+                    writer.Write(header.DynStr.RegionRoDataOffset);
+                    writer.Write(header.DynStr.RegionSize);
+                    writer.Write(header.DynSym.RegionRoDataOffset);
+                    writer.Write(header.DynSym.RegionSize);
+                    writer.Write(header.TextHash);
+                    writer.Write(header.RoDataHash);
+                    writer.Write(header.DataHash);
+                    writer.BaseStream.Position = header.TextSegment.FileOffset;
+                    Position = header.TextSegment.FileOffset;
+                    var textBytes = ReadBytes((int)header.TextCompressedSize);
+                    if (isTextCompressed)
                     {
-                        decoder.ReadExactly(unCompressedData, 0, unCompressedData.Length);
+                        var unCompressedData = new byte[header.TextSegment.DecompressedSize];
+                        using (var decoder = new Lz4DecoderStream(new MemoryStream(textBytes)))
+                        {
+                            decoder.ReadExactly(unCompressedData, 0, unCompressedData.Length);
+                        }
+                        writer.Write(unCompressedData);
                     }
-                    writer.Write(unCompressedData);
-                }
-                else
-                {
-                    writer.Write(textBytes);
-                }
-                var roDataBytes = ReadBytes((int)header.RoDataCompressedSize);
-                if (isRoDataCompressed)
-                {
-                    var unCompressedData = new byte[header.RoDataSegment.DecompressedSize];
-                    using (var decoder = new Lz4DecoderStream(new MemoryStream(roDataBytes)))
+                    else
                     {
-                        decoder.ReadExactly(unCompressedData, 0, unCompressedData.Length);
+                        writer.Write(textBytes);
                     }
-                    writer.Write(unCompressedData);
-                }
-                else
-                {
-                    writer.Write(roDataBytes);
-                }
-                var dataBytes = ReadBytes((int)header.DataCompressedSize);
-                if (isDataCompressed)
-                {
-                    var unCompressedData = new byte[header.DataSegment.DecompressedSize];
-                    using (var decoder = new Lz4DecoderStream(new MemoryStream(dataBytes)))
+                    var roDataBytes = ReadBytes((int)header.RoDataCompressedSize);
+                    if (isRoDataCompressed)
                     {
-                        decoder.ReadExactly(unCompressedData, 0, unCompressedData.Length);
+                        var unCompressedData = new byte[header.RoDataSegment.DecompressedSize];
+                        using (var decoder = new Lz4DecoderStream(new MemoryStream(roDataBytes)))
+                        {
+                            decoder.ReadExactly(unCompressedData, 0, unCompressedData.Length);
+                        }
+                        writer.Write(unCompressedData);
                     }
-                    writer.Write(unCompressedData);
+                    else
+                    {
+                        writer.Write(roDataBytes);
+                    }
+                    var dataBytes = ReadBytes((int)header.DataCompressedSize);
+                    if (isDataCompressed)
+                    {
+                        var unCompressedData = new byte[header.DataSegment.DecompressedSize];
+                        using (var decoder = new Lz4DecoderStream(new MemoryStream(dataBytes)))
+                        {
+                            decoder.ReadExactly(unCompressedData, 0, unCompressedData.Length);
+                        }
+                        writer.Write(unCompressedData);
+                    }
+                    else
+                    {
+                        writer.Write(dataBytes);
+                    }
                 }
-                else
-                {
-                    writer.Write(dataBytes);
-                }
-                writer.Flush();
                 unCompressedStream.Position = 0;
                 return new NSO(unCompressedStream);
             }

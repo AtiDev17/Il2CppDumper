@@ -3,7 +3,7 @@
 namespace Il2CppDumper
 {
     [AttributeUsage(AttributeTargets.Field)]
-    class ArrayLengthAttribute : Attribute
+    internal sealed class ArrayLengthAttribute : Attribute
     {
         public int Length { get; set; }
     }

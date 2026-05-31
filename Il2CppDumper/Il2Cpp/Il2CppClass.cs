@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace Il2CppDumper
 {
-    public class Il2CppCodeRegistration
+    internal sealed class Il2CppCodeRegistration
     {
         [Version(Max = 24.1)]
         public ulong methodPointersCount;
@@ -89,19 +89,27 @@ namespace Il2CppDumper
                 }
 
                 if (field.FieldType == typeof(byte) || field.FieldType == typeof(sbyte))
+                {
                     size += sizeof(byte);
+                }
                 if (field.FieldType == typeof(long) || field.FieldType == typeof(ulong))
+                {
                     size += sizeof(ulong);
+                }
                 if (field.FieldType == typeof(int) || field.FieldType == typeof(uint))
+                {
                     size += sizeof(uint);
+                }
                 if (field.FieldType == typeof(short) || field.FieldType == typeof(ushort))
+                {
                     size += sizeof(ushort);
+                }
             }
             return size;
         }
     }
 
-    public class Il2CppMetadataRegistration
+    internal sealed class Il2CppMetadataRegistration
     {
         public long genericClassesCount;
         public ulong genericClasses;
@@ -129,7 +137,7 @@ namespace Il2CppDumper
         public ulong metadataUsages;
     }
 
-    public enum Il2CppTypeEnum
+    internal enum Il2CppTypeEnum
     {
         IL2CPP_TYPE_END = 0x00,       /* End of List */
         IL2CPP_TYPE_VOID = 0x01,
@@ -172,7 +180,7 @@ namespace Il2CppDumper
         IL2CPP_TYPE_IL2CPP_TYPE_INDEX = 0xff        /* an index into IL2CPP type metadata table */
     }
 
-    public class Il2CppType
+    internal sealed class Il2CppType
     {
         public ulong datapoint;
         public uint bits;
@@ -204,7 +212,7 @@ namespace Il2CppDumper
             data = new Union { dummy = datapoint };
         }
 
-        public class Union
+        internal sealed class Union
         {
             public ulong dummy;
             /// <summary>
@@ -238,7 +246,7 @@ namespace Il2CppDumper
         }
     }
 
-    public class Il2CppGenericClass
+    internal sealed class Il2CppGenericClass
     {
         [Version(Max = 24.5)]
         public long typeDefinitionIndex;    /* the generic type definition */
@@ -248,7 +256,7 @@ namespace Il2CppDumper
         public ulong cached_class; /* if present, the Il2CppClass corresponding to the instantiation.  */
     }
 
-    public class Il2CppGenericContext
+    internal sealed class Il2CppGenericContext
     {
         /* The instantiation corresponding to the class generic parameters */
         public ulong class_inst;
@@ -256,13 +264,13 @@ namespace Il2CppDumper
         public ulong method_inst;
     }
 
-    public class Il2CppGenericInst
+    internal sealed class Il2CppGenericInst
     {
         public long type_argc;
         public ulong type_argv;
     }
 
-    public class Il2CppArrayType
+    internal sealed class Il2CppArrayType
     {
         public ulong etype;
         public byte rank;
@@ -272,13 +280,14 @@ namespace Il2CppDumper
         public ulong lobounds;
     }
 
-    public class Il2CppGenericMethodFunctionsDefinitions
+    internal sealed class Il2CppGenericMethodFunctionsDefinitions
     {
         public int genericMethodIndex;
         public Il2CppGenericMethodIndices indices;
     }
 
-    public class Il2CppGenericMethodIndices
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Microsoft.Performance", "CA1812")]
+    internal sealed class Il2CppGenericMethodIndices
     {
         public int methodIndex;
         public int invokerIndex;
@@ -287,14 +296,14 @@ namespace Il2CppDumper
         public int adjustorThunk;
     };
 
-    public class Il2CppMethodSpec
+    internal sealed class Il2CppMethodSpec
     {
         public int methodDefinitionIndex;
         public int classIndexIndex;
         public int methodIndexIndex;
     };
 
-    public class Il2CppCodeGenModule
+    internal sealed class Il2CppCodeGenModule
     {
         public ulong moduleName;
         public long methodPointerCount;
@@ -325,13 +334,14 @@ namespace Il2CppDumper
         public ulong codeRegistaration; // Per-assembly mode only
     }
 
-    public class Il2CppRange
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Microsoft.Performance", "CA1812")]
+    internal sealed class Il2CppRange
     {
         public int start;
         public int length;
     }
 
-    public class Il2CppTokenRangePair
+    internal sealed class Il2CppTokenRangePair
     {
         public uint token;
         public Il2CppRange range;

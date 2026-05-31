@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Il2CppDumper
 {
-    public abstract class Il2Cpp : BinaryStream
+    internal abstract class Il2Cpp(Stream stream) : BinaryStream(stream)
     {
         public Il2CppMetadataRegistration pMetadataRegistration;
         private Il2CppCodeRegistration pCodeRegistration;
@@ -18,14 +18,14 @@ namespace Il2CppDumper
         public ulong[] interopDataFunctionPointers;
         private ulong[] fieldOffsets;
         public Il2CppType[] types;
-        private readonly Dictionary<ulong, Il2CppType> typeDic = new();
+        private readonly Dictionary<ulong, Il2CppType> typeDic = [];
         public ulong[] metadataUsages;
         private Il2CppGenericMethodFunctionsDefinitions[] genericMethodTable;
         public ulong[] genericInstPointers;
         public Il2CppGenericInst[] genericInsts;
         public Il2CppMethodSpec[] methodSpecs;
-        public Dictionary<int, List<Il2CppMethodSpec>> methodDefinitionMethodSpecs = new();
-        public Dictionary<Il2CppMethodSpec, ulong> methodSpecGenericMethodPointers = new();
+        public Dictionary<int, List<Il2CppMethodSpec>> methodDefinitionMethodSpecs = [];
+        public Dictionary<Il2CppMethodSpec, ulong> methodSpecGenericMethodPointers = [];
         private bool fieldOffsetsArePointers;
         protected long metadataUsagesCount;
         public Dictionary<string, Il2CppCodeGenModule> codeGenModules;
@@ -40,8 +40,6 @@ namespace Il2CppDumper
         public abstract bool SymbolSearch();
         public abstract SectionHelper GetSectionHelper(int methodCount, int typeDefinitionsCount, int imageCount);
         public abstract bool CheckDump();
-
-        protected Il2Cpp(Stream stream) : base(stream) { }
 
         public void SetProperties(double version, long metadataUsagesCount)
         {
@@ -169,16 +167,20 @@ namespace Il2CppDumper
             {
                 customAttributeGenerators = MapVATR<ulong>(pCodeRegistration.customAttributeGenerators, pCodeRegistration.customAttributeCount);
             }
-            if (Version > 16 && Version < 27)
+            if (Version is > 16 and < 27)
             {
                 metadataUsages = MapVATR<ulong>(pMetadataRegistration.metadataUsages, metadataUsagesCount);
             }
             if (Version >= 22)
             {
                 if (pCodeRegistration.reversePInvokeWrapperCount != 0)
+                {
                     reversePInvokeWrappers = MapVATR<ulong>(pCodeRegistration.reversePInvokeWrappers, pCodeRegistration.reversePInvokeWrapperCount);
+                }
                 if (pCodeRegistration.unresolvedVirtualCallCount != 0)
+                {
                     unresolvedVirtualCallPointers = MapVATR<ulong>(pCodeRegistration.unresolvedVirtualCallPointers, pCodeRegistration.unresolvedVirtualCallCount);
+                }
             }
             if (Version >= 23 && pCodeRegistration.interopDataCount != 0)
             {
@@ -187,13 +189,13 @@ namespace Il2CppDumper
                 var list = new List<ulong>();
                 for (ulong i = 0; i < pCodeRegistration.interopDataCount; i++)
                 {
-                    Position = interopPtr + i * entrySize;
+                    Position = interopPtr + (i * entrySize);
                     for (int j = 0; j < 5; j++)
                     {
                         list.Add(ReadUIntPtr());
                     }
                 }
-                interopDataFunctionPointers = list.ToArray();
+                interopDataFunctionPointers = [.. list];
             }
             genericInstPointers = MapVATR<ulong>(pMetadataRegistration.genericInsts, pMetadataRegistration.genericInstsCount);
             genericInsts = Array.ConvertAll(genericInstPointers, MapVATR<Il2CppGenericInst>);
@@ -203,21 +205,14 @@ namespace Il2CppDumper
                 var fieldTest = MapVATR<uint>(pMetadataRegistration.fieldOffsets, 6);
                 fieldOffsetsArePointers = fieldTest[0] == 0 && fieldTest[1] == 0 && fieldTest[2] == 0 && fieldTest[3] == 0 && fieldTest[4] == 0 && fieldTest[5] > 0;
             }
-            if (fieldOffsetsArePointers)
-            {
-                fieldOffsets = MapVATR<ulong>(pMetadataRegistration.fieldOffsets, pMetadataRegistration.fieldOffsetsCount);
-            }
-            else
-            {
-                fieldOffsets = Array.ConvertAll(MapVATR<uint>(pMetadataRegistration.fieldOffsets, pMetadataRegistration.fieldOffsetsCount), x => (ulong)x);
-            }
+            fieldOffsets = fieldOffsetsArePointers ? MapVATR<ulong>(pMetadataRegistration.fieldOffsets, pMetadataRegistration.fieldOffsetsCount) : Array.ConvertAll(MapVATR<uint>(pMetadataRegistration.fieldOffsets, pMetadataRegistration.fieldOffsetsCount), x => (ulong)x);
             var pTypes = MapVATR<ulong>(pMetadataRegistration.types, pMetadataRegistration.typesCount);
             types = new Il2CppType[pMetadataRegistration.typesCount];
             for (var i = 0; i < pMetadataRegistration.typesCount; ++i)
             {
                 types[i] = MapVATR<Il2CppType>(pTypes[i]);
                 types[i].Init(Version);
-                typeDic.TryAdd(pTypes[i], types[i]);
+                _ = typeDic.TryAdd(pTypes[i], types[i]);
             }
             if (Version >= 24.2)
             {
@@ -235,7 +230,7 @@ namespace Il2CppDumper
                     {
                         methodPointers = MapVATR<ulong>(codeGenModule.methodPointers, codeGenModule.methodPointerCount);
                     }
-                    catch (Exception ex)
+                    catch (IndexOutOfRangeException ex)
                     {
                         Console.WriteLine($"Failed to read method pointers for {moduleName}: {ex.Message}");
                         methodPointers = new ulong[codeGenModule.methodPointerCount];
@@ -269,28 +264,22 @@ namespace Il2CppDumper
                 var methodDefinitionIndex = methodSpec.methodDefinitionIndex;
                 if (!methodDefinitionMethodSpecs.TryGetValue(methodDefinitionIndex, out var list))
                 {
-                    list = new List<Il2CppMethodSpec>();
+                    list = [methodSpec];
                     methodDefinitionMethodSpecs.Add(methodDefinitionIndex, list);
                 }
-                list.Add(methodSpec);
+                else
+                {
+                    list.Add(methodSpec);
+                }
                 methodSpecGenericMethodPointers.Add(methodSpec, genericMethodPointers[table.indices.methodIndex]);
             }
         }
 
-        public T MapVATR<T>(ulong addr) where T : new()
-        {
-            return ReadClass<T>(MapVATR(addr));
-        }
+        public T MapVATR<T>(ulong addr) where T : new() => ReadClass<T>(MapVATR(addr));
 
-        public T[] MapVATR<T>(ulong addr, ulong count) where T : new()
-        {
-            return ReadClassArray<T>(MapVATR(addr), count);
-        }
+        public T[] MapVATR<T>(ulong addr, ulong count) where T : new() => ReadClassArray<T>(MapVATR(addr), count);
 
-        public T[] MapVATR<T>(ulong addr, long count) where T : new()
-        {
-            return ReadClassArray<T>(MapVATR(addr), count);
-        }
+        public T[] MapVATR<T>(ulong addr, long count) where T : new() => ReadClassArray<T>(MapVATR(addr), count);
 
         public int GetFieldOffsetFromIndex(int typeIndex, int fieldIndexInType, int fieldIndex, bool isValueType, bool isStatic)
         {
@@ -302,7 +291,7 @@ namespace Il2CppDumper
                     var ptr = fieldOffsets[typeIndex];
                     if (ptr > 0)
                     {
-                        Position = MapVATR(ptr) + 4ul * (ulong)fieldIndexInType;
+                        Position = MapVATR(ptr) + (4ul * (ulong)fieldIndexInType);
                         offset = ReadInt32();
                     }
                 }
@@ -326,7 +315,7 @@ namespace Il2CppDumper
                 }
                 return offset;
             }
-            catch (Exception ex)
+            catch (IndexOutOfRangeException ex)
             {
                 Console.WriteLine($"GetFieldOffsetFromIndex error: {ex.Message}");
                 return -1;
@@ -335,11 +324,7 @@ namespace Il2CppDumper
 
         public Il2CppType GetIl2CppType(ulong pointer)
         {
-            if (!typeDic.TryGetValue(pointer, out var type))
-            {
-                return null;
-            }
-            return type;
+            return typeDic.TryGetValue(pointer, out var type) ? type : null;
         }
 
         public ulong GetMethodPointer(string imageName, Il2CppMethodDefinition methodDef)
@@ -362,9 +347,6 @@ namespace Il2CppDumper
             return 0;
         }
 
-        public virtual ulong GetRVA(ulong pointer)
-        {
-            return pointer;
-        }
+        public virtual ulong GetRVA(ulong pointer) => pointer;
     }
 }

@@ -8,12 +8,12 @@ using System.Threading;
 
 namespace Il2CppDumper
 {
-    class Program
+    internal sealed class Program
     {
         private static Config config;
 
         [STAThread]
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
             {
@@ -36,18 +36,23 @@ namespace Il2CppDumper
                 var arg = it.Current;
                 switch (arg)
                 {
-                    case "-h": case "--help": case "/?":
+                    case "-h":
+                    case "--help":
+                    case "/?":
                         ShowHelp();
                         return;
-                    case "-i": case "--input":
+                    case "-i":
+                    case "--input":
                         if (!it.MoveNext()) { ShowHelp(); return; }
                         il2cppPath = it.Current;
                         break;
-                    case "-m": case "--meta":
+                    case "-m":
+                    case "--meta":
                         if (!it.MoveNext()) { ShowHelp(); return; }
                         metadataPath = it.Current;
                         break;
-                    case "-o": case "--output":
+                    case "-o":
+                    case "--output":
                         if (!it.MoveNext()) { ShowHelp(); return; }
                         outputDir = it.Current;
                         break;
@@ -65,7 +70,10 @@ namespace Il2CppDumper
                     return;
                 }
                 var ofd = new OpenFileDialog { Filter = "Il2Cpp binary|*.*" };
-                if (!ofd.ShowDialog()) return;
+                if (!ofd.ShowDialog())
+                {
+                    return;
+                }
                 il2cppPath = ofd.FileName;
             }
             if (metadataPath == null)
@@ -77,7 +85,10 @@ namespace Il2CppDumper
                     return;
                 }
                 var ofd = new OpenFileDialog { Filter = "global-metadata.dat|global-metadata.dat" };
-                if (!ofd.ShowDialog()) return;
+                if (!ofd.ShowDialog())
+                {
+                    return;
+                }
                 metadataPath = ofd.FileName;
             }
             if (outputDir == null)
@@ -89,16 +100,21 @@ namespace Il2CppDumper
                     return;
                 }
                 var fbd = new FolderBrowserDialog { Description = "Select output folder" };
-                if (!fbd.ShowDialog()) return;
+                if (!fbd.ShowDialog())
+                {
+                    return;
+                }
                 outputDir = fbd.SelectedPath + Path.DirectorySeparatorChar;
             }
 
             outputDir = Path.GetFullPath(outputDir) + Path.DirectorySeparatorChar;
-            Directory.CreateDirectory(outputDir);
+            _ = Directory.CreateDirectory(outputDir);
 
+            Metadata metadata = null;
+            Il2Cpp il2Cpp = null;
             try
             {
-                if (Init(il2cppPath, metadataPath, out var metadata, out var il2Cpp))
+                if (Init(il2cppPath, metadataPath, out metadata, out il2Cpp))
                 {
                     Dump(metadata, il2Cpp, outputDir);
                 }
@@ -107,9 +123,14 @@ namespace Il2CppDumper
             {
                 Console.WriteLine(e);
             }
+            finally
+            {
+                metadata?.Dispose();
+                il2Cpp?.Dispose();
+            }
         }
 
-        static void ShowHelp()
+        private static void ShowHelp()
         {
             Console.WriteLine("Il2CppDumper - Unity il2cpp reverse engineering tool\n");
             Console.WriteLine("Usage:");
@@ -124,7 +145,7 @@ namespace Il2CppDumper
             Console.WriteLine("If no arguments are provided, GUI dialogs will be shown.");
         }
 
-        static void GenerateReplaceNameMap()
+        private static void GenerateReplaceNameMap()
         {
             if (config.ReplaceHashNames != null && config.ReplaceHashNames.Count > 0)
             {
@@ -133,10 +154,7 @@ namespace Il2CppDumper
                 {
                     var targetName = config.ReplaceHashNames[i].TargetName;
                     var replaceToName = config.ReplaceHashNames[i].ReplaceToName;
-                    if (!config.ReplaceHashNameMap.ContainsKey(targetName))
-                    {
-                        config.ReplaceHashNameMap.Add(targetName, replaceToName);
-                    }
+                    _ = config.ReplaceHashNameMap.TryAdd(targetName, replaceToName);
                 }
             }
         }
@@ -146,7 +164,7 @@ namespace Il2CppDumper
             string result = null;
             if (config.ReplaceHashNameMap != null)
             {
-                config.ReplaceHashNameMap.TryGetValue(targetName, out result);
+                _ = config.ReplaceHashNameMap.TryGetValue(targetName, out result);
             }
             return result;
         }
@@ -179,55 +197,54 @@ namespace Il2CppDumper
                 default:
                     throw new NotSupportedException("ERROR: il2cpp file not supported.");
                 case 0x6D736100:
-                    var web = new WebAssembly(il2CppMemory);
-                    il2Cpp = web.CreateMemory();
-                    break;
+                    {
+                        using var web = new WebAssembly(il2CppMemory);
+                        il2Cpp = web.CreateMemory();
+                        break;
+                    }
                 case 0x304F534E:
-                    var nso = new NSO(il2CppMemory);
-                    il2Cpp = nso.UnCompress();
-                    break;
+                    {
+                        using var nso = new NSO(il2CppMemory);
+                        il2Cpp = nso.UnCompress();
+                        break;
+                    }
                 case 0x905A4D: //PE
                     il2Cpp = new PE(il2CppMemory);
                     break;
                 case 0x464c457f: //ELF
-                    if (il2cppBytes[4] == 2) //ELF64
-                    {
-                        il2Cpp = new Elf64(il2CppMemory);
-                    }
-                    else
-                    {
-                        il2Cpp = new Elf(il2CppMemory);
-                    }
+                    il2Cpp = il2cppBytes[4] == 2 ? new Elf64(il2CppMemory) : new Elf(il2CppMemory);
                     break;
                 case 0xCAFEBABE: //FAT Mach-O
                 case 0xBEBAFECA:
-                    var machofat = new MachoFat(new MemoryStream(il2cppBytes));
-                    Console.Write("Select Platform: ");
-                    for (var i = 0; i < machofat.fats.Length; i++)
                     {
-                        var fat = machofat.fats[i];
-                        Console.Write(fat.magic == 0xFEEDFACF ? $"{i + 1}.64bit " : $"{i + 1}.32bit ");
+                        using var machofat = new MachoFat(new MemoryStream(il2cppBytes));
+                        Console.Write("Select Platform: ");
+                        for (var i = 0; i < machofat.fats.Length; i++)
+                        {
+                            var fat = machofat.fats[i];
+                            Console.Write(fat.magic == 0xFEEDFACF ? $"{i + 1}.64bit " : $"{i + 1}.32bit ");
+                        }
+                        Console.WriteLine();
+                        var key = Console.ReadKey(true);
+                        if (!int.TryParse(key.KeyChar.ToString(), out var parsedIndex))
+                        {
+                            Console.WriteLine("Invalid platform selection.");
+                            il2Cpp = null;
+                            return false;
+                        }
+                        var index = parsedIndex - 1;
+                        if (index < 0 || index >= machofat.fats.Length)
+                        {
+                            Console.WriteLine("Invalid platform selection.");
+                            il2Cpp = null;
+                            return false;
+                        }
+                        var magic = machofat.fats[index].magic;
+                        il2cppBytes = machofat.GetMacho(index);
+                        il2CppMemory = new MemoryStream(il2cppBytes);
+                        il2Cpp = magic == 0xFEEDFACF ? new Macho64(il2CppMemory) : new Macho(il2CppMemory);
+                        break;
                     }
-                    Console.WriteLine();
-                    var key = Console.ReadKey(true);
-                    if (!int.TryParse(key.KeyChar.ToString(), out var parsedIndex))
-                    {
-                        Console.WriteLine("Invalid platform selection.");
-                        il2Cpp = null;
-                        return false;
-                    }
-                    var index = parsedIndex - 1;
-                    if (index < 0 || index >= machofat.fats.Length)
-                    {
-                        Console.WriteLine("Invalid platform selection.");
-                        il2Cpp = null;
-                        return false;
-                    }
-                    var magic = machofat.fats[index].magic;
-                    il2cppBytes = machofat.GetMacho(index);
-                    il2CppMemory = new MemoryStream(il2cppBytes);
-                    il2Cpp = magic == 0xFEEDFACF ? new Macho64(il2CppMemory) : new Macho(il2CppMemory);
-                    break;
                 case 0xFEEDFACF: // 64bit Mach-O
                     il2Cpp = new Macho64(il2CppMemory);
                     break;
@@ -272,7 +289,7 @@ namespace Il2CppDumper
                 if (config.DisablePlusSearch)
                 {
                     Console.WriteLine("PlusSearch is disabled...");
-                    var sectionHelper = il2Cpp.GetSectionHelper(metadata.methodDefs.Count(), metadata.typeDefs.Length, metadata.imageDefs.Length);
+                    var sectionHelper = il2Cpp.GetSectionHelper(metadata.methodDefs.Length, metadata.typeDefs.Length, metadata.imageDefs.Length);
                     var codeRegistration = sectionHelper.FindCodeRegistration();
                     var metadataRegistration = sectionHelper.FindMetadataRegistration();
                     if (codeRegistration != 0 && metadataRegistration != 0)
@@ -283,8 +300,14 @@ namespace Il2CppDumper
                     else
                     {
                         Console.WriteLine("ERROR: Can't use auto mode to process file, try manual mode.");
-                        if (!TryReadHex64("Input CodeRegistration: ", out codeRegistration)) return false;
-                        if (!TryReadHex64("Input MetadataRegistration: ", out metadataRegistration)) return false;
+                        if (!TryReadHex64("Input CodeRegistration: ", out codeRegistration))
+                        {
+                            return false;
+                        }
+                        if (!TryReadHex64("Input MetadataRegistration: ", out metadataRegistration))
+                        {
+                            return false;
+                        }
                         il2Cpp.Init(codeRegistration, metadataRegistration);
                     }
                 }
@@ -309,8 +332,14 @@ namespace Il2CppDumper
                     if (!flag)
                     {
                         Console.WriteLine("ERROR: Can't use auto mode to process file, try manual mode.");
-                        if (!TryReadHex64("Input CodeRegistration: ", out var codeRegistration)) return false;
-                        if (!TryReadHex64("Input MetadataRegistration: ", out var metadataRegistration)) return false;
+                        if (!TryReadHex64("Input CodeRegistration: ", out var codeRegistration))
+                        {
+                            return false;
+                        }
+                        if (!TryReadHex64("Input MetadataRegistration: ", out var metadataRegistration))
+                        {
+                            return false;
+                        }
                         il2Cpp.Init(codeRegistration, metadataRegistration);
                     }
                 }

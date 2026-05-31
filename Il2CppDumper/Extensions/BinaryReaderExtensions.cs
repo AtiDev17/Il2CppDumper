@@ -1,10 +1,9 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Text;
 
 namespace Il2CppDumper
 {
-    public static class BinaryReaderExtensions
+    internal static class BinaryReaderExtensions
     {
         public static string ReadString(this BinaryReader reader, int numChars)
         {
@@ -13,7 +12,7 @@ namespace Il2CppDumper
             var str = Encoding.UTF8.GetString(reader.ReadBytes(numChars * 4))[..numChars];
             // make our position what it would have been if we'd known the exact number of bytes needed.
             reader.BaseStream.Position = start;
-            reader.ReadBytes(Encoding.UTF8.GetByteCount(str));
+            _ = reader.ReadBytes(Encoding.UTF8.GetByteCount(str));
             return str;
         }
 
@@ -30,7 +29,9 @@ namespace Il2CppDumper
                     bitshift += 7;
                     value |= (uint)((b & 0x7f) << bitshift);
                     if (b < 0x80)
+                    {
                         break;
+                    }
                 }
             }
             return value;
@@ -56,8 +57,8 @@ namespace Il2CppDumper
             {
                 // 4 bytes written
                 val = (read & ~0xC0u) << 24;
-                val |= ((uint)reader.ReadByte() << 16);
-                val |= ((uint)reader.ReadByte() << 8);
+                val |= (uint)reader.ReadByte() << 16;
+                val |= (uint)reader.ReadByte() << 8;
                 val |= reader.ReadByte();
             }
             else if (read == 0xF0)
@@ -75,13 +76,9 @@ namespace Il2CppDumper
                 // Yes we treat UInt32.MaxValue (and Int32.MinValue, see ReadCompressedInt32) specially
                 val = uint.MaxValue;
             }
-            else if (read == 0xE8)
-            {
-                val = 0;
-            }
             else
             {
-                throw new Exception("Invalid compressed integer format");
+                val = read == 0xE8 ? 0u : throw new InvalidDataException("Invalid compressed integer format");
             }
 
             return val;
@@ -93,13 +90,13 @@ namespace Il2CppDumper
 
             // -UINT32_MAX can't be represted safely in an int32_t, so we treat it specially
             if (encoded == uint.MaxValue)
+            {
                 return int.MinValue;
+            }
 
             bool isNegative = (encoded & 1) != 0;
             encoded >>= 1;
-            if (isNegative)
-                return -(int)(encoded + 1);
-            return (int)encoded;
+            return isNegative ? -(int)(encoded + 1) : (int)encoded;
         }
     }
 }

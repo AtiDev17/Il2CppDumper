@@ -6,13 +6,13 @@ using System.Text;
 
 namespace Il2CppDumper
 {
-    public class PELoader
+    internal static class PELoader
     {
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-        private extern static IntPtr LoadLibrary(string path);
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Winapi)]
+        private static extern IntPtr LoadLibrary(string path);
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private extern static bool FreeLibrary(IntPtr hModule);
+        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
+        private static extern bool FreeLibrary(IntPtr hModule);
 
         public static PE Load(string fileName)
         {
@@ -57,6 +57,8 @@ namespace Il2CppDumper
                     case 0xC0000040:
                         Marshal.Copy(new IntPtr(handle.ToInt64() + section.VirtualAddress), peBuff, (int)section.VirtualAddress, (int)section.VirtualSize);
                         break;
+                    default:
+                        break;
                 }
             }
             var peMemory = new MemoryStream(peBuff);
@@ -70,7 +72,7 @@ namespace Il2CppDumper
             peMemory.Position = 0;
             var pe = new PE(peMemory);
             pe.LoadFromMemory((ulong)handle.ToInt64());
-            FreeLibrary(handle);
+            _ = FreeLibrary(handle);
             return pe;
         }
     }
