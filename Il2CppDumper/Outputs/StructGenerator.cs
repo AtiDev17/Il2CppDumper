@@ -534,6 +534,9 @@ namespace Il2CppDumper
             }
         }
 
+        private static readonly Regex _startsWithDigit = new Regex("^[0-9]", RegexOptions.Compiled);
+        private static readonly Regex _invalidChars = new Regex("[^a-zA-Z0-9_]", RegexOptions.Compiled);
+
         private static string FixName(string str)
         {
             if (keyword.Contains(str))
@@ -545,13 +548,13 @@ namespace Il2CppDumper
                 str = "_" + str + "_";
             }
 
-            if (Regex.IsMatch(str, "^[0-9]"))
+            if (_startsWithDigit.IsMatch(str))
             {
                 return "_" + str;
             }
             else
             {
-                return Regex.Replace(str, "[^a-zA-Z0-9_]", "_");
+                return _invalidChars.Replace(str, "_");
             }
         }
 

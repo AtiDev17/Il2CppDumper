@@ -19,6 +19,7 @@ namespace Il2CppDumper
         private readonly MethodInfo readClassArray;
         private readonly Dictionary<Type, MethodInfo> genericMethodCache;
         private readonly Dictionary<FieldInfo, VersionAttribute[]> attributeCache;
+        private readonly Dictionary<Type, FieldInfo[]> fieldCache;
 
         public BinaryStream(Stream input)
         {
@@ -31,6 +32,7 @@ namespace Il2CppDumper
             readClassArray = GetType().GetMethod("ReadClassArray", new[] { typeof(long) });
             genericMethodCache = new();
             attributeCache = new();
+            fieldCache = new();
         }
 
         public bool ReadBoolean() => reader.ReadBoolean();
@@ -124,7 +126,12 @@ namespace Il2CppDumper
             else
             {
                 var t = new T();
-                foreach (var i in t.GetType().GetFields())
+                if (!fieldCache.TryGetValue(type, out var fields))
+                {
+                    fields = type.GetFields();
+                    fieldCache.Add(type, fields);
+                }
+                foreach (var i in fields)
                 {
                     if (!attributeCache.TryGetValue(i, out var versionAttributes))
                     {

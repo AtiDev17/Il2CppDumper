@@ -44,7 +44,7 @@ def register_typedefs():
 		try:
 			tdef = TypedefDataType(CategoryPath.ROOT, name, baseType)
 			dtm.resolve(tdef, DataTypeConflictHandler.REPLACE_HANDLER)
-		except:
+		except Exception as e:
 			pass
 
 register_typedefs()
@@ -215,7 +215,7 @@ def make_function(start):
 	if func is None:
 		try:
 			createFunction(start, None)
-		except:
+		except Exception as e:
 			pass
 
 sig_ok = 0

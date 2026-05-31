@@ -226,10 +226,8 @@ namespace Il2CppDumper
                     var magic = machofat.fats[index].magic;
                     il2cppBytes = machofat.GetMacho(index);
                     il2CppMemory = new MemoryStream(il2cppBytes);
-                    if (magic == 0xFEEDFACF)
-                        goto case 0xFEEDFACF;
-                    else
-                        goto case 0xFEEDFACE;
+                    il2Cpp = magic == 0xFEEDFACF ? new Macho64(il2CppMemory) : new Macho(il2CppMemory);
+                    break;
                 case 0xFEEDFACF: // 64bit Mach-O
                     il2Cpp = new Macho64(il2CppMemory);
                     break;

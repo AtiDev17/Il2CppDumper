@@ -11,6 +11,9 @@ namespace Il2CppDumper
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         private extern static IntPtr LoadLibrary(string path);
 
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private extern static bool FreeLibrary(IntPtr hModule);
+
         public static PE Load(string fileName)
         {
             var buff = File.ReadAllBytes(fileName);
@@ -67,6 +70,7 @@ namespace Il2CppDumper
             peMemory.Position = 0;
             var pe = new PE(peMemory);
             pe.LoadFromMemory((ulong)handle.ToInt64());
+            FreeLibrary(handle);
             return pe;
         }
     }

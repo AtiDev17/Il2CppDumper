@@ -1,8 +1,14 @@
-import json, sys, traceback
+import json
 from ghidra.program.model.symbol import SourceType
 from ghidra.program.model.data import DataTypeConflictHandler, CategoryPath, StructureDataType, ParameterDefinitionImpl
 from ghidra.program.model.listing import ParameterImpl, Function
 from java.util import ArrayList as JArrayList
+
+try:
+	from ghidra.program.model.data import VoidDataType
+	_VOID = VoidDataType.dataType
+except:
+	_VOID = None
 
 baseAddress = currentProgram.getImageBase()
 dtm = currentProgram.getDataTypeManager()

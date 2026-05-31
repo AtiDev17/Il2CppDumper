@@ -46,13 +46,13 @@ For IDA, read il2cpp.h file and apply structure information in IDA (Python 3)
 
 structure information header file
 
-#### ghidra.py
+#### ghidra_with_struct.py
 
-For Ghidra
+For Ghidra, imports all names, types, strings, metadata, and function signatures from script.json
 
-#### ghidra_12_with_struct.py
+#### ghidra_set_params.py
 
-For Ghidra 12+, read il2cpp.h file and apply structure information
+For Ghidra, sets function parameter names and types (run after ghidra_with_struct.py)
 
 #### Il2CppBinaryNinja
 
@@ -64,7 +64,7 @@ For Ghidra, work with [ghidra-wasm-plugin](https://github.com/nneonneo/ghidra-wa
 
 #### script.json
 
-For ghidra.py, ghidra_12_with_struct.py and Il2CppBinaryNinja
+For ghidra_with_struct.py, ghidra_set_params.py, ida_with_struct_py3.py and Il2CppBinaryNinja
 
 #### script.bin
 
