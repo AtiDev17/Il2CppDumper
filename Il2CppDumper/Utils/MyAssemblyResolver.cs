@@ -1,12 +1,12 @@
-﻿using Mono.Cecil;
+﻿using dnlib.DotNet;
 
 namespace Il2CppDumper
 {
-    public class MyAssemblyResolver : DefaultAssemblyResolver
+    public class MyAssemblyResolver : AssemblyResolver
     {
-        public void Register(AssemblyDefinition assembly)
+        public void Register(AssemblyDef assembly)
         {
-            RegisterAssembly(assembly);
+            AddToCache(assembly);
         }
     }
 }

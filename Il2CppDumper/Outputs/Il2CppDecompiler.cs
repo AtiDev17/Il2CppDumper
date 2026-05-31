@@ -24,7 +24,7 @@ namespace Il2CppDumper
 
         public void Decompile(Config config, string outputDir)
         {
-            var writer = new StreamWriter(new FileStream(outputDir + "dump.cs", FileMode.Create), new UTF8Encoding(false));
+            var writer = new StreamWriter(new FileStream(Path.Combine(outputDir, "dump.cs"), FileMode.Create), new UTF8Encoding(false));
             //dump image
             for (var imageIndex = 0; imageIndex < metadata.imageDefs.Length; imageIndex++)
             {
@@ -55,11 +55,11 @@ namespace Il2CppDumper
                         {
                             for (int i = 0; i < typeDef.interfaces_count; i++)
                             {
-                                var @interface = il2Cpp.types[metadata.interfaceIndices[typeDef.interfacesStart + i]];
+                                var @interface = il2Cpp.types[metadata.interfaceOffsetPairs[typeDef.interfacesStart + i].interfaceTypeIndex];
                                 extends.Add(executor.GetTypeName(@interface, false, false));
                             }
                         }
-                        writer.Write($"\n// Namespace: {metadata.GetStringFromIndex(typeDef.namespaceIndex)}\n");
+                        writer.Write($"\n// Image: {imageName}\n// Namespace: {metadata.GetStringFromIndex(typeDef.namespaceIndex)}\n");
                         if (config.DumpAttribute)
                         {
                             writer.Write(GetCustomAttribute(imageDef, typeDef.customAttributeIndex, typeDef.token));
@@ -425,7 +425,7 @@ namespace Il2CppDumper
                 {
                     var startRange = metadata.attributeDataRanges[attributeIndex];
                     var endRange = metadata.attributeDataRanges[attributeIndex + 1];
-                    metadata.Position = metadata.header.attributeDataOffset + startRange.startOffset;
+                    metadata.Position = (il2Cpp.Version < 38 ? metadata.header.attributeDataOffset : metadata.header.attributeData.offset) + startRange.startOffset;
                     var buff = metadata.ReadBytes((int)(endRange.startOffset - startRange.startOffset));
                     var reader = new CustomAttributeDataReader(executor, buff);
                     if (reader.Count == 0)

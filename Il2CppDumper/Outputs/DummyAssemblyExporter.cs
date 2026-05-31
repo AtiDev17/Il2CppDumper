@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using dnlib.DotNet;
+using dnlib.DotNet.Writer;
+using System.IO;
 
 namespace Il2CppDumper
 {
@@ -14,9 +16,12 @@ namespace Il2CppDumper
             var dummy = new DummyAssemblyGenerator(il2CppExecutor, addToken);
             foreach (var assembly in dummy.Assemblies)
             {
+                var module = assembly.ManifestModule;
                 using var stream = new MemoryStream();
-                assembly.Write(stream);
-                File.WriteAllBytes(assembly.MainModule.Name, stream.ToArray());
+                var opts = new ModuleWriterOptions(module);
+                opts.Logger = DummyLogger.NoThrowInstance;
+                module.Write(stream, opts);
+                File.WriteAllBytes(module.Name, stream.ToArray());
             }
         }
     }
