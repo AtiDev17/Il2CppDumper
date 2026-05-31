@@ -22,7 +22,7 @@ namespace Il2CppDumper
         private readonly Dictionary<int, MethodDef> methodDefinitionDic = new();
         private readonly Dictionary<Il2CppGenericParameter, GenericVar> genericVarDic = new();
         private readonly Dictionary<Il2CppGenericParameter, GenericMVar> genericMVarDic = new();
-        public DummyAssemblyGenerator(Il2CppExecutor il2CppExecutor, bool addToken)
+        public DummyAssemblyGenerator(Il2CppExecutor il2CppExecutor, Config config)
         {
             executor = il2CppExecutor;
             metadata = il2CppExecutor.metadata;
@@ -108,7 +108,7 @@ namespace Il2CppDumper
                     var typeDefinition = typeDefinitionDic[typeDef];
                     var module = typeDefinition.Module;
 
-                    if (addToken)
+                    if (config.DummyDllAddToken)
                     {
                         var customTokenAttribute = new CustomAttribute(module.Import(tokenAttribute));
                         customTokenAttribute.NamedArguments.Add(new CANamedArgument(true, module.CorLibTypes.String, "Token", new CAArgument(module.CorLibTypes.String, $"0x{typeDef.token:X}")));
@@ -164,28 +164,28 @@ namespace Il2CppDumper
                         typeDefinition.Fields.Add(fieldDefinition);
                         fieldDefinitionDic.Add(i, fieldDefinition);
 
-                        if (addToken)
+                        if (config.DummyDllAddToken)
                         {
                             var customTokenAttribute = new CustomAttribute(module.Import(tokenAttribute));
                             customTokenAttribute.NamedArguments.Add(new CANamedArgument(true, module.CorLibTypes.String, "Token", new CAArgument(module.CorLibTypes.String, $"0x{fieldDef.token:X}")));
                             fieldDefinition.CustomAttributes.Add(customTokenAttribute);
                         }
 
-                        if (metadata.GetFieldDefaultValueFromIndex(i, out var fieldDefault) && fieldDefault.dataIndex != -1)
-                        {
-                            if (executor.TryGetDefaultValue(fieldDefault.typeIndex, fieldDefault.dataIndex, out var value))
-                            {
-                                fieldDefinition.Constant = ToConstant(value);
-                            }
-                            else
-                            {
-                                var customAttribute = new CustomAttribute(module.Import(metadataOffsetAttribute));
-                                var offset = new CANamedArgument(true, module.CorLibTypes.String, "Offset", new CAArgument(module.CorLibTypes.String, $"0x{value:X}"));
-                                customAttribute.NamedArguments.Add(offset);
-                                fieldDefinition.CustomAttributes.Add(customAttribute);
-                            }
-                        }
-                        if (!fieldDefinition.IsLiteral)
+                if (metadata.GetFieldDefaultValueFromIndex(i, out var fieldDefault) && fieldDefault.dataIndex != -1)
+                {
+                    if (executor.TryGetDefaultValue(fieldDefault.typeIndex, fieldDefault.dataIndex, out var value))
+                    {
+                        fieldDefinition.Constant = ToConstant(value);
+                    }
+                    else if (config.DummyDllAddOffset)
+                    {
+                        var customAttribute = new CustomAttribute(module.Import(metadataOffsetAttribute));
+                        var offset = new CANamedArgument(true, module.CorLibTypes.String, "Offset", new CAArgument(module.CorLibTypes.String, $"0x{value:X}"));
+                        customAttribute.NamedArguments.Add(offset);
+                        fieldDefinition.CustomAttributes.Add(customAttribute);
+                    }
+                }
+                        if (!fieldDefinition.IsLiteral && config.DummyDllAddOffset)
                         {
                             var fieldOffset = il2Cpp.GetFieldOffsetFromIndex(index, i - typeDef.fieldStart, i, typeDefinition.IsValueType, fieldDefinition.IsStatic);
                             if (fieldOffset >= 0)
@@ -222,7 +222,7 @@ namespace Il2CppDumper
                             }
                         }
 
-                        if (addToken)
+                        if (config.DummyDllAddToken)
                         {
                             var customTokenAttribute = new CustomAttribute(module.Import(tokenAttribute));
                             customTokenAttribute.NamedArguments.Add(new CANamedArgument(true, module.CorLibTypes.String, "Token", new CAArgument(module.CorLibTypes.String, $"0x{methodDef.token:X}")));
@@ -272,7 +272,7 @@ namespace Il2CppDumper
                                 {
                                     paramDef.Constant = ToConstant(value);
                                 }
-                                else
+                                else if (config.DummyDllAddOffset)
                                 {
                                     var customAttribute = new CustomAttribute(module.Import(metadataOffsetAttribute));
                                     var offset = new CANamedArgument(true, module.CorLibTypes.String, "Offset", new CAArgument(module.CorLibTypes.String, $"0x{value:X}"));
@@ -282,7 +282,7 @@ namespace Il2CppDumper
                             }
                         }
                         methodDefinition.Parameters.UpdateParameterTypes();
-                        if (!methodDefinition.IsAbstract)
+                        if (!methodDefinition.IsAbstract && config.DummyDllAddOffset)
                         {
                             var methodPointer = il2Cpp.GetMethodPointer(imageName, methodDef);
                             if (methodPointer > 0)
@@ -331,7 +331,7 @@ namespace Il2CppDumper
                         typeDefinition.Properties.Add(propertyDefinition);
                         propertyDefinitionDic.Add(i, propertyDefinition);
 
-                        if (addToken)
+                        if (config.DummyDllAddToken)
                         {
                             var customTokenAttribute = new CustomAttribute(module.Import(tokenAttribute));
                             customTokenAttribute.NamedArguments.Add(new CANamedArgument(true, module.CorLibTypes.String, "Token", new CAArgument(module.CorLibTypes.String, $"0x{propertyDef.token:X}")));
@@ -356,7 +356,7 @@ namespace Il2CppDumper
                         typeDefinition.Events.Add(eventDefinition);
                         eventDefinitionDic.Add(i, eventDefinition);
 
-                        if (addToken)
+                        if (config.DummyDllAddToken)
                         {
                             var customTokenAttribute = new CustomAttribute(module.Import(tokenAttribute));
                             customTokenAttribute.NamedArguments.Add(new CANamedArgument(true, module.CorLibTypes.String, "Token", new CAArgument(module.CorLibTypes.String, $"0x{eventDef.token:X}")));

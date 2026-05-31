@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Threading;
 
 namespace Il2CppDumper
 {
@@ -9,95 +12,98 @@ namespace Il2CppDumper
     {
         private static Config config;
 
+        [STAThread]
         static void Main(string[] args)
         {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Thread.CurrentThread.GetApartmentState() != ApartmentState.STA)
+            {
+                var thread = new Thread(() => Main(args));
+                thread.SetApartmentState(ApartmentState.STA);
+                thread.Start();
+                thread.Join();
+                return;
+            }
+
             config = JsonSerializer.Deserialize<Config>(File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "config.json")));
             GenerateReplaceNameMap();
             string il2cppPath = null;
             string metadataPath = null;
             string outputDir = null;
 
-            if (args.Length == 1)
+            var it = ((IEnumerable<string>)args).GetEnumerator();
+            while (it.MoveNext())
             {
-                if (args[0] == "-h" || args[0] == "--help" || args[0] == "/?" || args[0] == "/h")
+                var arg = it.Current;
+                switch (arg)
                 {
-                    ShowHelp();
-                    return;
+                    case "-h": case "--help": case "/?":
+                        ShowHelp();
+                        return;
+                    case "-i": case "--input":
+                        if (!it.MoveNext()) { ShowHelp(); return; }
+                        il2cppPath = it.Current;
+                        break;
+                    case "-m": case "--meta":
+                        if (!it.MoveNext()) { ShowHelp(); return; }
+                        metadataPath = it.Current;
+                        break;
+                    case "-o": case "--output":
+                        if (!it.MoveNext()) { ShowHelp(); return; }
+                        outputDir = it.Current;
+                        break;
+                    default:
+                        Console.WriteLine($"Unknown argument: {arg}"); ShowHelp(); return;
                 }
             }
-            if (args.Length < 3)
-            {
-                Console.WriteLine("ERROR: Not enough arguments.");
-                ShowHelp();
-                return;
-            }
-            if (args.Length > 1)
-            {
-                foreach (var arg in args)
-                {
-                    if (File.Exists(arg))
-                    {
-                        uint magicBytes = 0;
-                        using (var fileStream = File.OpenRead(arg))
-                        {
-                            magicBytes = new BinaryReader(fileStream).ReadUInt32();
-                        }
-                        if (magicBytes == 0xFAB11BAF)
-                        {
-                            metadataPath = arg;
-                        }
-                        else
-                        {
-                            il2cppPath = arg;
-                        }
-                    }
-                    else if (Directory.Exists(arg))
-                    {
-                        outputDir = Path.GetFullPath(arg) + Path.DirectorySeparatorChar;
-                    }
-                }
-            }
-            if (string.IsNullOrEmpty(outputDir) || !Directory.Exists(outputDir))
-            {
-                Console.WriteLine("ERROR: The specified output folder does not exist.");
-                ShowHelp();
-                return;
-            }
-            outputDir = Path.GetFullPath(outputDir) + Path.DirectorySeparatorChar;
-            if (il2cppPath == null || metadataPath == null)
-            {
-                Console.WriteLine("ERROR: Missing required input files.");
-                ShowHelp();
-                return;
-            }
+
             if (il2cppPath == null)
             {
-                ShowHelp();
-                return;
+                var ofd = new OpenFileDialog { Filter = "Il2Cpp binary|*.*" };
+                if (!ofd.ShowDialog()) return;
+                il2cppPath = ofd.FileName;
             }
             if (metadataPath == null)
             {
-                Console.WriteLine($"ERROR: Metadata file not found or encrypted.");
+                var ofd = new OpenFileDialog { Filter = "global-metadata.dat|global-metadata.dat" };
+                if (!ofd.ShowDialog()) return;
+                metadataPath = ofd.FileName;
             }
-            else
+            if (outputDir == null)
             {
-                try
+                var fbd = new FolderBrowserDialog { Description = "Select output folder" };
+                if (!fbd.ShowDialog()) return;
+                outputDir = fbd.SelectedPath + Path.DirectorySeparatorChar;
+            }
+
+            outputDir = Path.GetFullPath(outputDir) + Path.DirectorySeparatorChar;
+            Directory.CreateDirectory(outputDir);
+
+            try
+            {
+                if (Init(il2cppPath, metadataPath, out var metadata, out var il2Cpp))
                 {
-                    if (Init(il2cppPath, metadataPath, out var metadata, out var il2Cpp))
-                    {
-                        Dump(metadata, il2Cpp, outputDir);
-                    }
+                    Dump(metadata, il2Cpp, outputDir);
                 }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
             }
         }
 
         static void ShowHelp()
         {
-            Console.WriteLine($"usage: {AppDomain.CurrentDomain.FriendlyName} <executable-file> <global-metadata> <output-directory>");
+            Console.WriteLine("Il2CppDumper - Unity il2cpp reverse engineering tool\n");
+            Console.WriteLine("Usage:");
+            Console.WriteLine($"  {AppDomain.CurrentDomain.FriendlyName} -i <il2cpp-binary> -m <global-metadata> -o <output-directory>");
+            Console.WriteLine();
+            Console.WriteLine("Options:");
+            Console.WriteLine("  -h, --help           Show this help message and exit");
+            Console.WriteLine("  -i, --input          Path to il2cpp binary file");
+            Console.WriteLine("  -m, --meta           Path to global-metadata.dat file");
+            Console.WriteLine("  -o, --output         Output directory");
+            Console.WriteLine();
+            Console.WriteLine("If no arguments are provided, GUI dialogs will be shown.");
         }
 
         static void GenerateReplaceNameMap()
@@ -295,7 +301,7 @@ namespace Il2CppDumper
             if (config.GenerateDummyDll)
             {
                 Console.WriteLine("Generate dummy dll...");
-                DummyAssemblyExporter.Export(executor, outputDir, config.DummyDllAddToken);
+                DummyAssemblyExporter.Export(executor, outputDir, config);
                 Console.WriteLine("Done!");
             }
         }
