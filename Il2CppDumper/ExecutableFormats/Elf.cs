@@ -21,7 +21,7 @@ namespace Il2CppDumper
         * ADD R2, X, X
         */
         private static readonly string ARMFeatureBytes = "? 0x10 ? 0xE7 ? 0x00 ? 0xE0 ? 0x20 ? 0xE0";
-        private static readonly string X86FeatureBytes = "? 0x10 ? 0xE7 ? 0x00 ? 0xE0 ? 0x20 ? 0xE0"; //TODO: x86 feature bytes pattern not yet verified - this is a placeholder based on ARM pattern
+        // x86 ELF feature bytes pattern is not available - Search() returns false for x86
 
         public Elf(Stream stream) : base(stream)
         {
@@ -96,10 +96,14 @@ namespace Il2CppDumper
 
         public override bool Search()
         {
+            if (elfHeader.e_machine != EM_ARM)
+            {
+                return false;
+            }
             var _GLOBAL_OFFSET_TABLE_ = dynamicSection.First(x => x.d_tag == DT_PLTGOT).d_un;
             var execs = programSegment.Where(x => x.p_type == PT_LOAD && (x.p_flags & PF_X) == 1).ToArray();
             var resultList = new List<int>();
-            var featureBytes = elfHeader.e_machine == EM_ARM ? ARMFeatureBytes : X86FeatureBytes;
+            var featureBytes = ARMFeatureBytes;
             foreach (var exec in execs)
             {
                 Position = exec.p_offset;

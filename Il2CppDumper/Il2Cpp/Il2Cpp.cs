@@ -15,6 +15,7 @@ namespace Il2CppDumper
         public ulong[] customAttributeGenerators;
         public ulong[] reversePInvokeWrappers;
         public ulong[] unresolvedVirtualCallPointers;
+        public ulong[] interopDataFunctionPointers;
         private ulong[] fieldOffsets;
         public Il2CppType[] types;
         private readonly Dictionary<ulong, Il2CppType> typeDic = new();
@@ -52,7 +53,9 @@ namespace Il2CppDumper
         {
             if (codeRegistration != 0)
             {
-                var limit = this is WebAssemblyMemory ? 0x35000u : 0x50000u; //TODO: heuristic threshold for version detection, may need tuning for future Unity versions
+                // Threshold for version detection heuristics: methods/pointers below this are likely v27-v31,
+                // above indicate v27.1-v31.1 (or a very large game). Bump if modern games misdetect version.
+                var limit = this is WebAssemblyMemory ? 0x35000u : 0x80000u;
                 if (Version >= 24.2)
                 {
                     pCodeRegistration = MapVATR<Il2CppCodeRegistration>(codeRegistration);
@@ -98,7 +101,7 @@ namespace Il2CppDumper
                     }
                     if (Version == 24.2)
                     {
-                        if (pCodeRegistration.interopDataCount == 0) //TODO: heuristic to distinguish v24.2 from v24.3
+                        if (pCodeRegistration.interopDataCount == 0) // heuristic: v24.3 added interopData field; reading it at v24.2 offset yields 0
                         {
                             Version = 24.3;
                             codeRegistration -= PointerSize * 2;
@@ -120,7 +123,9 @@ namespace Il2CppDumper
         public virtual void Init(ulong codeRegistration, ulong metadataRegistration)
         {
             pCodeRegistration = MapVATR<Il2CppCodeRegistration>(codeRegistration);
-            var limit = this is WebAssemblyMemory ? 0x35000u : 0x50000u; //TODO: heuristic threshold for version detection, may need tuning for future Unity versions
+            // Threshold for version detection heuristics: methods/pointers below this are likely v27-v31,
+            // above indicate v27.1-v31.1 (or a very large game). Bump if modern games misdetect version.
+            var limit = this is WebAssemblyMemory ? 0x35000u : 0x80000u;
             if (Version == 27 && pCodeRegistration.invokerPointersCount > limit)
             {
                 Version = 27.1;
@@ -151,7 +156,7 @@ namespace Il2CppDumper
                 Console.WriteLine($"Change il2cpp version to: {Version}");
                 pCodeRegistration = MapVATR<Il2CppCodeRegistration>(codeRegistration);
             }
-            if (Version == 24.2 && pCodeRegistration.codeGenModules == 0) //TODO: heuristic to distinguish v24.2 from v24.3
+            if (Version == 24.2 && pCodeRegistration.codeGenModules == 0) // heuristic: v24.3 added codeGenModules; v24.2 reads old struct offset -> 0
             {
                 Version = 24.3;
                 Console.WriteLine($"Change il2cpp version to: {Version}");
@@ -174,6 +179,21 @@ namespace Il2CppDumper
                     reversePInvokeWrappers = MapVATR<ulong>(pCodeRegistration.reversePInvokeWrappers, pCodeRegistration.reversePInvokeWrapperCount);
                 if (pCodeRegistration.unresolvedVirtualCallCount != 0)
                     unresolvedVirtualCallPointers = MapVATR<ulong>(pCodeRegistration.unresolvedVirtualCallPointers, pCodeRegistration.unresolvedVirtualCallCount);
+            }
+            if (Version >= 23 && pCodeRegistration.interopDataCount != 0)
+            {
+                var interopPtr = MapVATR(pCodeRegistration.interopData);
+                var entrySize = PointerSize * 7UL;
+                var list = new List<ulong>();
+                for (ulong i = 0; i < pCodeRegistration.interopDataCount; i++)
+                {
+                    Position = interopPtr + i * entrySize;
+                    for (int j = 0; j < 5; j++)
+                    {
+                        list.Add(ReadUIntPtr());
+                    }
+                }
+                interopDataFunctionPointers = list.ToArray();
             }
             genericInstPointers = MapVATR<ulong>(pMetadataRegistration.genericInsts, pMetadataRegistration.genericInstsCount);
             genericInsts = Array.ConvertAll(genericInstPointers, MapVATR<Il2CppGenericInst>);

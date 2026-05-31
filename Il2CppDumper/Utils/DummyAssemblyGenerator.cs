@@ -661,7 +661,7 @@ namespace Il2CppDumper
                     {
                         var startRange = metadata.attributeDataRanges[attributeIndex];
                         var endRange = metadata.attributeDataRanges[attributeIndex + 1];
-                        metadata.Position = metadata.header.attributeDataOffset + startRange.startOffset;
+                        metadata.Position = (il2Cpp.Version < 38 ? metadata.header.attributeDataOffset : metadata.header.attributeData.offset) + startRange.startOffset;
                         var buff = metadata.ReadBytes((int)(endRange.startOffset - startRange.startOffset));
                         var reader = new CustomAttributeDataReader(executor, buff);
                         if (reader.Count != 0)

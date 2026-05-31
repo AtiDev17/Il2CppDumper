@@ -58,18 +58,36 @@ namespace Il2CppDumper
 
             if (il2cppPath == null)
             {
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Console.WriteLine("ERROR: Missing required -i argument. GUI dialogs are only available on Windows.");
+                    ShowHelp();
+                    return;
+                }
                 var ofd = new OpenFileDialog { Filter = "Il2Cpp binary|*.*" };
                 if (!ofd.ShowDialog()) return;
                 il2cppPath = ofd.FileName;
             }
             if (metadataPath == null)
             {
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Console.WriteLine("ERROR: Missing required -m argument. GUI dialogs are only available on Windows.");
+                    ShowHelp();
+                    return;
+                }
                 var ofd = new OpenFileDialog { Filter = "global-metadata.dat|global-metadata.dat" };
                 if (!ofd.ShowDialog()) return;
                 metadataPath = ofd.FileName;
             }
             if (outputDir == null)
             {
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Console.WriteLine("ERROR: Missing required -o argument. GUI dialogs are only available on Windows.");
+                    ShowHelp();
+                    return;
+                }
                 var fbd = new FolderBrowserDialog { Description = "Select output folder" };
                 if (!fbd.ShowDialog()) return;
                 outputDir = fbd.SelectedPath + Path.DirectorySeparatorChar;

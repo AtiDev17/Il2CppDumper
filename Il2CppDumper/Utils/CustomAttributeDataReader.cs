@@ -70,10 +70,14 @@ namespace Il2CppDumper
 
         private string AttributeDataToString(BlobValue blobValue)
         {
-            //TODO: enum value serialization not yet implemented - enum values will be serialized as their underlying integer type
             if (blobValue.Value == null)
             {
                 return "null";
+            }
+            if (blobValue.EnumType != null)
+            {
+                var enumTypeName = executor.GetTypeName(blobValue.EnumType, false, false);
+                return $"({enumTypeName}){blobValue.Value}";
             }
             switch (blobValue.il2CppTypeEnum)
             {

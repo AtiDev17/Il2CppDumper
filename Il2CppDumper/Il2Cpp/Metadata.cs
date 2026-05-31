@@ -175,7 +175,7 @@ namespace Il2CppDumper
             }
             else
             {
-                interfaceOffsetPairs = ReadMetadataClassArray<Il2CppInterfaceOffsetPair>(header.interfaces.offset, (int)header.interfaces.size);
+                interfaceOffsetPairs = ReadMetadataClassArray<Il2CppInterfaceOffsetPair>(header.interfaceOffsets.offset, (int)header.interfaceOffsets.size);
             }
             nestedTypeIndices = Version < 38
                 ? ReadClassArray<int>(header.nestedTypesOffset, header.nestedTypesSize / 4)

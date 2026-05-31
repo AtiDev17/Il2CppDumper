@@ -264,7 +264,8 @@ namespace Il2CppDumper
                 if (il2Cpp.unresolvedVirtualCallPointers != null)
                     orderedPointers.AddRange(il2Cpp.unresolvedVirtualCallPointers);
             }
-            //TODO: interopData also contains function pointers that are not included in the ordered range
+            if (il2Cpp.interopDataFunctionPointers != null)
+                orderedPointers.AddRange(il2Cpp.interopDataFunctionPointers);
             orderedPointers = orderedPointers.Distinct().OrderBy(x => x).ToList();
             orderedPointers.Remove(0);
             json.Addresses = new ulong[orderedPointers.Count];
@@ -383,9 +384,9 @@ namespace Il2CppDumper
                 address = $"0x{x.Address:X}"
             }).ToArray();
             var jsonOptions = new JsonSerializerOptions() { WriteIndented = true, IncludeFields = true };
-            File.WriteAllText(Path.Combine(outputDir, "stringliteral.json"), JsonSerializer.Serialize(stringLiterals, jsonOptions), new UTF8Encoding(false));
+            File.WriteAllBytes(Path.Combine(outputDir, "stringliteral.json"), JsonSerializer.SerializeToUtf8Bytes(stringLiterals, jsonOptions));
             //写入文件
-            File.WriteAllText(Path.Combine(outputDir, "script.json"), JsonSerializer.Serialize(json, jsonOptions));
+            File.WriteAllBytes(Path.Combine(outputDir, "script.json"), JsonSerializer.SerializeToUtf8Bytes(json, jsonOptions));
             ScriptBin.WriteFile(Path.Combine(outputDir, "script.bin"), json);
             //il2cpp.h
             for (int i = 0; i < genericClassList.Count; i++)
@@ -1379,7 +1380,7 @@ namespace Il2CppDumper
             }
             else
             {
-                methodInfoHeader.Append($"\tvoid* invoker_method;\n"); //TODO: actual invoker_method type layout for pre-v29 is unknown
+                methodInfoHeader.Append($"\tInvokerMethod invoker_method;\n");
             }
             methodInfoHeader.Append($"\tconst char* name;\n");
             if (il2Cpp.Version <= 24)
