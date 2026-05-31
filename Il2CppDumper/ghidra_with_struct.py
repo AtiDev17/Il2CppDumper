@@ -9,7 +9,7 @@ from ghidra.program.model.util import CodeUnitInsertionException
 try:
 	from ghidra.program.model.data import VoidDataType
 	_VOID = VoidDataType.dataType
-except:
+except Exception:
 	_VOID = None
 
 processFields = [
@@ -44,7 +44,7 @@ def register_typedefs():
 		try:
 			tdef = TypedefDataType(CategoryPath.ROOT, name, baseType)
 			dtm.resolve(tdef, DataTypeConflictHandler.REPLACE_HANDLER)
-		except Exception as e:
+		except Exception:
 			pass
 
 register_typedefs()
@@ -65,7 +65,7 @@ def _find_dt(name):
 		dt = dtm.resolve(st, DataTypeConflictHandler.REPLACE_HANDLER)
 		_find_cache[name] = dt
 		return dt
-	except:
+	except Exception:
 		_find_cache[name] = None
 		return None
 
@@ -99,7 +99,7 @@ def _resolve_type(dtm, type_str):
 			t = dtm.getPointer(t)
 		_type_cache[key] = t
 		return t
-	except:
+	except Exception:
 		_type_cache[key] = None
 		return None
 
@@ -179,7 +179,7 @@ def import_needed_types(data):
 			dt = dtm.resolve(st, handler)
 			_find_cache[name] = dt
 			count += 1
-		except:
+		except Exception:
 			_find_cache[name] = None
 		if count % 5000 == 0 and count > 0:
 			print("  ... %d stubs created" % count)
@@ -192,7 +192,7 @@ def set_name(addr, name):
 	try:
 		name = name.replace(' ', '-')
 		createLabel(addr, name, True, USER_DEFINED)
-	except:
+	except Exception:
 		pass
 
 def set_type(addr, type):
@@ -215,7 +215,7 @@ def make_function(start):
 	if func is None:
 		try:
 			createFunction(start, None)
-		except Exception as e:
+		except Exception:
 			pass
 
 sig_ok = 0
@@ -289,7 +289,7 @@ def set_sig(addr, name, sig):
 
 		func.setReturnType(rt, SourceType.USER_DEFINED)
 		sig_ok += 1
-	except:
+	except Exception:
 		skip_exception += 1
 		sig_skip += 1
 		if skip_exception <= 3:

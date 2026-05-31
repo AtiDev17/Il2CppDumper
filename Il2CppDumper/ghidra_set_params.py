@@ -7,7 +7,7 @@ from java.util import ArrayList as JArrayList
 try:
 	from ghidra.program.model.data import VoidDataType
 	_VOID = VoidDataType.dataType
-except:
+except Exception:
 	_VOID = None
 
 baseAddress = currentProgram.getImageBase()
@@ -50,10 +50,10 @@ def _resolve_type(type_str):
 				t = dtm.getPointer(t)
 			_type_cache[key] = t
 			return t
-		except:
+		except Exception:
 			_type_cache[key] = None
 			return None
-	except:
+	except Exception:
 		_type_cache[key] = None
 		return None
 
@@ -106,7 +106,7 @@ def set_params(addr, sig):
 			params.add(ParameterImpl(pd.getName(), pd.getDataType(), currentProgram))
 		func.replaceParameters(params, Function.FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, False, SourceType.USER_DEFINED)
 		sig_ok += 1
-	except Exception as e:
+	except Exception:
 		skip_exception += 1
 
 print("Opening script.json...")
