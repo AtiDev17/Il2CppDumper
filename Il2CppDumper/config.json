@@ -9,15 +9,12 @@
   "GenerateDummyDll": true,
   "GenerateStruct": true,
   "DummyDllAddToken": false,
-  "DummyDllAddAddress": false,
   "DummyDllAddOffset": false,
-  "RequireAnyKey": false,
   "ForceIl2CppVersion": false,
   "ForceVersion": 29,
   "ForceDump": false,
   "NoRedirectedPointer": false,
   "DisablePlusSearch": false,
-  "EscapeJsonValues": true,
   "ReplaceHashNames": [
 
   ]

@@ -52,7 +52,7 @@ namespace Il2CppDumper
         {
             if (codeRegistration != 0)
             {
-                var limit = this is WebAssemblyMemory ? 0x35000u : 0x50000u; //TODO
+                var limit = this is WebAssemblyMemory ? 0x35000u : 0x50000u; //TODO: heuristic threshold for version detection, may need tuning for future Unity versions
                 if (Version >= 24.2)
                 {
                     pCodeRegistration = MapVATR<Il2CppCodeRegistration>(codeRegistration);
@@ -98,7 +98,7 @@ namespace Il2CppDumper
                     }
                     if (Version == 24.2)
                     {
-                        if (pCodeRegistration.interopDataCount == 0) //TODO
+                        if (pCodeRegistration.interopDataCount == 0) //TODO: heuristic to distinguish v24.2 from v24.3
                         {
                             Version = 24.3;
                             codeRegistration -= PointerSize * 2;
@@ -120,7 +120,7 @@ namespace Il2CppDumper
         public virtual void Init(ulong codeRegistration, ulong metadataRegistration)
         {
             pCodeRegistration = MapVATR<Il2CppCodeRegistration>(codeRegistration);
-            var limit = this is WebAssemblyMemory ? 0x35000u : 0x50000u; //TODO
+            var limit = this is WebAssemblyMemory ? 0x35000u : 0x50000u; //TODO: heuristic threshold for version detection, may need tuning for future Unity versions
             if (Version == 27 && pCodeRegistration.invokerPointersCount > limit)
             {
                 Version = 27.1;
@@ -151,7 +151,7 @@ namespace Il2CppDumper
                 Console.WriteLine($"Change il2cpp version to: {Version}");
                 pCodeRegistration = MapVATR<Il2CppCodeRegistration>(codeRegistration);
             }
-            if (Version == 24.2 && pCodeRegistration.codeGenModules == 0) //TODO
+            if (Version == 24.2 && pCodeRegistration.codeGenModules == 0) //TODO: heuristic to distinguish v24.2 from v24.3
             {
                 Version = 24.3;
                 Console.WriteLine($"Change il2cpp version to: {Version}");
@@ -197,7 +197,7 @@ namespace Il2CppDumper
             {
                 types[i] = MapVATR<Il2CppType>(pTypes[i]);
                 types[i].Init(Version);
-                typeDic.Add(pTypes[i], types[i]);
+                typeDic.TryAdd(pTypes[i], types[i]);
             }
             if (Version >= 24.2)
             {
@@ -215,8 +215,9 @@ namespace Il2CppDumper
                     {
                         methodPointers = MapVATR<ulong>(codeGenModule.methodPointers, codeGenModule.methodPointerCount);
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        Console.WriteLine($"Failed to read method pointers for {moduleName}: {ex.Message}");
                         methodPointers = new ulong[codeGenModule.methodPointerCount];
                     }
                     codeGenModuleMethodPointers.Add(moduleName, methodPointers);
@@ -305,8 +306,9 @@ namespace Il2CppDumper
                 }
                 return offset;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"GetFieldOffsetFromIndex error: {ex.Message}");
                 return -1;
             }
         }

@@ -158,9 +158,9 @@ namespace Il2CppDumper
                 var dynsymOffset = MapVATR(dynamicSection.First(x => x.d_tag == DT_SYMTAB).d_un);
                 symbolTable = ReadClassArray<Elf64_Sym>(dynsymOffset, symbolCount);
             }
-            catch
+            catch (Exception ex)
             {
-                // ignored
+                Console.WriteLine($"ReadSymbol error: {ex.Message}");
             }
         }
 
@@ -194,9 +194,9 @@ namespace Il2CppDumper
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // ignored
+                Console.WriteLine($"RelocationProcessing error: {ex.Message}");
             }
         }
 

@@ -6,7 +6,7 @@ Unity il2cpp reverse engineer
 
 * Complete DLL restore (except code), can be used to extract `MonoBehaviour` and `MonoScript`
 * Supports ELF, ELF64, Mach-O, PE, NSO and WASM format
-* Supports Unity 5.3 - 2025+
+* Supports Unity 5.3 - 2026+
 * Supports generate IDA, Ghidra and Binary Ninja scripts to help them better analyze il2cpp files
 * Supports generate structures header file
 * Supports Android memory dumped `libil2cpp.so` file to bypass protection
@@ -21,7 +21,7 @@ The program will then generate all the output files in current working directory
 ### Command-line
 
 ```
-Il2CppDumper.exe <executable-file> <global-metadata> <output-directory>
+Il2CppDumper.exe -i <executable-file> -m <global-metadata> -o <output-directory>
 ```
 
 ### Outputs
@@ -64,7 +64,15 @@ For Ghidra, work with [ghidra-wasm-plugin](https://github.com/nneonneo/ghidra-wa
 
 #### script.json
 
-For ida.py, ghidra.py and Il2CppBinaryNinja
+For ghidra.py, ghidra_12_with_struct.py and Il2CppBinaryNinja
+
+#### script.bin
+
+Binary format of script.json, used by ida_with_struct.idc
+
+#### ida_with_struct.idc
+
+For IDA (IDC script), read script.bin and il2cpp.h to apply structure information
 
 #### stringliteral.json
 
@@ -79,11 +87,13 @@ Available options:
 * `DumpMethod`, `DumpField`, `DumpProperty`, `DumpAttribute`, `DumpFieldOffset`, `DumpMethodOffset`, `DumpTypeDefIndex`
   * Whether to output these information to dump.cs
 
-* `GenerateDummyDll`, `GenerateScript`
+* `GenerateDummyDll`, `GenerateStruct`
   * Whether to generate these things
 
 * `DummyDllAddToken`
   * Whether to add token in DummyDll
+* `DummyDllAddOffset`
+  * Whether to add field/method offset attributes in DummyDll
 
 * `ForceIl2CppVersion`, `ForceVersion`
   * If `ForceIl2CppVersion` is `true`, the program will use the version number specified in `ForceVersion` to choose parser for il2cpp binaries (does not affect the choice of metadata parser). This may be useful on some older il2cpp version (e.g. the program may need to use v16 parser on il2cpp v20 (Android) binaries in order to work properly)
@@ -96,9 +106,6 @@ Available options:
 
 * `DisablePlusSearch`
   * Skip auto-search and require manual CodeRegistration/MetadataRegistration input
-
-* `EscapeJsonValues`
-  * Whether to escape non-ASCII characters in JSON output (default: true)
 
 * `ReplaceHashNames`
   * List of target/replace name pairs to replace hashed class names in output

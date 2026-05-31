@@ -110,10 +110,15 @@ namespace Il2CppDumper
         {
             if (config.ReplaceHashNames != null && config.ReplaceHashNames.Count > 0)
             {
-                config.ReplaceHashNameMap = new System.Collections.Generic.Dictionary<string, string>();
+                config.ReplaceHashNameMap = new System.Collections.Generic.Dictionary<string, string>(StringComparer.Ordinal);
                 for (int i = 0; i < config.ReplaceHashNames.Count; i++)
                 {
-                    config.ReplaceHashNameMap.Add(config.ReplaceHashNames[i].TargetName, config.ReplaceHashNames[i].ReplaceToName);
+                    var targetName = config.ReplaceHashNames[i].TargetName;
+                    var replaceToName = config.ReplaceHashNames[i].ReplaceToName;
+                    if (!config.ReplaceHashNameMap.ContainsKey(targetName))
+                    {
+                        config.ReplaceHashNameMap.Add(targetName, replaceToName);
+                    }
                 }
             }
         }
@@ -126,6 +131,18 @@ namespace Il2CppDumper
                 config.ReplaceHashNameMap.TryGetValue(targetName, out result);
             }
             return result;
+        }
+
+        private static bool TryReadHex64(string prompt, out ulong value)
+        {
+            Console.Write(prompt);
+            var input = Console.ReadLine();
+            if (!ulong.TryParse(input?.Trim(), System.Globalization.NumberStyles.HexNumber, null, out value))
+            {
+                Console.WriteLine("Invalid input. Expected a hexadecimal number.");
+                return false;
+            }
+            return true;
         }
 
         private static bool Init(string il2cppPath, string metadataPath, out Metadata metadata, out Il2Cpp il2Cpp)
@@ -175,9 +192,21 @@ namespace Il2CppDumper
                     }
                     Console.WriteLine();
                     var key = Console.ReadKey(true);
-                    var index = int.Parse(key.KeyChar.ToString()) - 1;
-                    var magic = machofat.fats[index % 2].magic;
-                    il2cppBytes = machofat.GetMacho(index % 2);
+                    if (!int.TryParse(key.KeyChar.ToString(), out var parsedIndex))
+                    {
+                        Console.WriteLine("Invalid platform selection.");
+                        il2Cpp = null;
+                        return false;
+                    }
+                    var index = parsedIndex - 1;
+                    if (index < 0 || index >= machofat.fats.Length)
+                    {
+                        Console.WriteLine("Invalid platform selection.");
+                        il2Cpp = null;
+                        return false;
+                    }
+                    var magic = machofat.fats[index].magic;
+                    il2cppBytes = machofat.GetMacho(index);
                     il2CppMemory = new MemoryStream(il2cppBytes);
                     if (magic == 0xFEEDFACF)
                         goto case 0xFEEDFACF;
@@ -199,7 +228,12 @@ namespace Il2CppDumper
                 {
                     Console.WriteLine("Detected this may be a dump file.");
                     Console.WriteLine("Input il2cpp dump address or input 0 to force continue:");
-                    var DumpAddr = Convert.ToUInt64(Console.ReadLine(), 16);
+                    var input = Console.ReadLine();
+                    if (!ulong.TryParse(input?.Trim(), System.Globalization.NumberStyles.HexNumber, null, out var DumpAddr))
+                    {
+                        Console.WriteLine("Invalid address format.");
+                        return false;
+                    }
                     if (DumpAddr != 0)
                     {
                         il2Cpp.ImageBase = DumpAddr;
@@ -233,10 +267,8 @@ namespace Il2CppDumper
                     else
                     {
                         Console.WriteLine("ERROR: Can't use auto mode to process file, try manual mode.");
-                        Console.Write("Input CodeRegistration: ");
-                        codeRegistration = Convert.ToUInt64(Console.ReadLine(), 16);
-                        Console.Write("Input MetadataRegistration: ");
-                        metadataRegistration = Convert.ToUInt64(Console.ReadLine(), 16);
+                        if (!TryReadHex64("Input CodeRegistration: ", out codeRegistration)) return false;
+                        if (!TryReadHex64("Input MetadataRegistration: ", out metadataRegistration)) return false;
                         il2Cpp.Init(codeRegistration, metadataRegistration);
                     }
                 }
@@ -261,10 +293,8 @@ namespace Il2CppDumper
                     if (!flag)
                     {
                         Console.WriteLine("ERROR: Can't use auto mode to process file, try manual mode.");
-                        Console.Write("Input CodeRegistration: ");
-                        var codeRegistration = Convert.ToUInt64(Console.ReadLine(), 16);
-                        Console.Write("Input MetadataRegistration: ");
-                        var metadataRegistration = Convert.ToUInt64(Console.ReadLine(), 16);
+                        if (!TryReadHex64("Input CodeRegistration: ", out var codeRegistration)) return false;
+                        if (!TryReadHex64("Input MetadataRegistration: ", out var metadataRegistration)) return false;
                         il2Cpp.Init(codeRegistration, metadataRegistration);
                     }
                 }

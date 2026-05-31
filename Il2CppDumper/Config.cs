@@ -20,15 +20,12 @@ namespace Il2CppDumper
         public bool GenerateDummyDll { get; set; } = true;
         public bool GenerateStruct { get; set; } = true;
         public bool DummyDllAddToken { get; set; } = true;
-        public bool DummyDllAddAddress { get; set; } = false;
         public bool DummyDllAddOffset { get; set; } = false;
-        public bool RequireAnyKey { get; set; } = true;
         public bool ForceIl2CppVersion { get; set; } = false;
         public double ForceVersion { get; set; } = 24.3;
         public bool ForceDump { get; set; } = false;
         public bool NoRedirectedPointer { get; set; } = false;
         public bool DisablePlusSearch { get; set; } = false;
-        public bool EscapeJsonValues { get; set; } = true;
         public List<ReplaceHashName> ReplaceHashNames { get; set; }
         public Dictionary<string, string> ReplaceHashNameMap { get; set; }
     }

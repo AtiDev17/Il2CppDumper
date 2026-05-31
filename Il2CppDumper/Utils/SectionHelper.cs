@@ -231,9 +231,9 @@ namespace Il2CppDumper
                                 }
                             }
                         }
-                        catch
+                        catch (Exception ex)
                         {
-                            // ignored
+                            Console.WriteLine($"FindCodeRegistrationOld error: {ex.Message}");
                         }
                     }
                     il2Cpp.Position = addr + il2Cpp.PointerSize;
@@ -267,9 +267,9 @@ namespace Il2CppDumper
                                 }
                             }
                         }
-                        catch
+                        catch (Exception ex)
                         {
-                            // ignored
+                            Console.WriteLine($"FindMetadataRegistrationOld error: {ex.Message}");
                         }
                     }
                     il2Cpp.Position = addr + il2Cpp.PointerSize;
@@ -314,9 +314,9 @@ namespace Il2CppDumper
                                     }
                                 }
                             }
-                            catch
+                            catch (Exception ex)
                             {
-                                // ignored
+                                Console.WriteLine($"FindMetadataRegistrationV21 error: {ex.Message}");
                             }
                         }
                     }

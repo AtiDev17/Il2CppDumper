@@ -8,11 +8,10 @@ namespace Il2CppDumper
     {
         public static void Export(Il2CppExecutor il2CppExecutor, string outputDir, Config config)
         {
-            Directory.SetCurrentDirectory(outputDir);
-            if (Directory.Exists("DummyDll"))
-                Directory.Delete("DummyDll", true);
-            Directory.CreateDirectory("DummyDll");
-            Directory.SetCurrentDirectory("DummyDll");
+            var dummyDir = Path.Combine(outputDir, "DummyDll");
+            if (Directory.Exists(dummyDir))
+                Directory.Delete(dummyDir, true);
+            Directory.CreateDirectory(dummyDir);
             var dummy = new DummyAssemblyGenerator(il2CppExecutor, config);
             foreach (var assembly in dummy.Assemblies)
             {
@@ -21,7 +20,7 @@ namespace Il2CppDumper
                 var opts = new ModuleWriterOptions(module);
                 opts.Logger = DummyLogger.NoThrowInstance;
                 module.Write(stream, opts);
-                File.WriteAllBytes(module.Name, stream.ToArray());
+                File.WriteAllBytes(Path.Combine(dummyDir, module.Name), stream.ToArray());
             }
         }
     }

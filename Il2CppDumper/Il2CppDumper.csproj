@@ -6,7 +6,7 @@
     <Version>6.7.47</Version>
     <AssemblyVersion>6.7.47.0</AssemblyVersion>
     <FileVersion>6.7.47.0</FileVersion>
-    <Copyright>Copyright © Perfare 2016-2025</Copyright>
+    <Copyright>Copyright © Perfare 2016-2026</Copyright>
     <DebugType>embedded</DebugType>
 	<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
   </PropertyGroup>
@@ -43,13 +43,7 @@
     <None Update="ghidra_with_struct.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="ida.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="ida_py3.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="ida_with_struct.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="ida_with_struct_py3.py">

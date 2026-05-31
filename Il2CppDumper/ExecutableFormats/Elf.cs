@@ -21,7 +21,7 @@ namespace Il2CppDumper
         * ADD R2, X, X
         */
         private static readonly string ARMFeatureBytes = "? 0x10 ? 0xE7 ? 0x00 ? 0xE0 ? 0x20 ? 0xE0";
-        private static readonly string X86FeatureBytes = "? 0x10 ? 0xE7 ? 0x00 ? 0xE0 ? 0x20 ? 0xE0"; //TODO
+        private static readonly string X86FeatureBytes = "? 0x10 ? 0xE7 ? 0x00 ? 0xE0 ? 0x20 ? 0xE0"; //TODO: x86 feature bytes pattern not yet verified - this is a placeholder based on ARM pattern
 
         public Elf(Stream stream) : base(stream)
         {
@@ -71,8 +71,9 @@ namespace Il2CppDumper
                 }
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"CheckSection error: {ex.Message}");
                 return false;
             }
         }
@@ -234,9 +235,9 @@ namespace Il2CppDumper
                 var dynsymOffset = MapVATR(dynamicSection.First(x => x.d_tag == DT_SYMTAB).d_un);
                 symbolTable = ReadClassArray<Elf32_Sym>(dynsymOffset, symbolCount);
             }
-            catch
+            catch (Exception ex)
             {
-                // ignored
+                Console.WriteLine($"ReadSymbol error: {ex.Message}");
             }
         }
 
@@ -266,9 +267,9 @@ namespace Il2CppDumper
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // ignored
+                Console.WriteLine($"RelocationProcessing error: {ex.Message}");
             }
         }
 
@@ -300,9 +301,9 @@ namespace Il2CppDumper
                     return true;
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // ignored
+                Console.WriteLine($"CheckProtection error: {ex.Message}");
             }
             return false;
         }

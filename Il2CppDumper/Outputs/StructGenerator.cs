@@ -264,7 +264,7 @@ namespace Il2CppDumper
                 if (il2Cpp.unresolvedVirtualCallPointers != null)
                     orderedPointers.AddRange(il2Cpp.unresolvedVirtualCallPointers);
             }
-            //TODO interopData内也包含函数
+            //TODO: interopData also contains function pointers that are not included in the ordered range
             orderedPointers = orderedPointers.Distinct().OrderBy(x => x).ToList();
             orderedPointers.Remove(0);
             json.Addresses = new ulong[orderedPointers.Count];
@@ -1379,7 +1379,7 @@ namespace Il2CppDumper
             }
             else
             {
-                methodInfoHeader.Append($"\tvoid* invoker_method;\n"); //TODO
+                methodInfoHeader.Append($"\tvoid* invoker_method;\n"); //TODO: actual invoker_method type layout for pre-v29 is unknown
             }
             methodInfoHeader.Append($"\tconst char* name;\n");
             if (il2Cpp.Version <= 24)

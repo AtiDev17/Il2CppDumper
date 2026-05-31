@@ -147,8 +147,16 @@ namespace Il2CppDumper
             var parameterDefaultValues = Version < 38
                 ? ReadMetadataClassArray<Il2CppParameterDefaultValue>(header.parameterDefaultValuesOffset, header.parameterDefaultValuesSize)
                 : ReadMetadataClassArray<Il2CppParameterDefaultValue>(header.parameterDefaultValues.offset, (int)header.parameterDefaultValues.size);
-            fieldDefaultValuesDic = fieldDefaultValues.ToDictionary(x => x.fieldIndex);
-            parameterDefaultValuesDic = parameterDefaultValues.ToDictionary(x => x.parameterIndex);
+            fieldDefaultValuesDic = new Dictionary<int, Il2CppFieldDefaultValue>(fieldDefaultValues.Length);
+            foreach (var fdv in fieldDefaultValues)
+            {
+                fieldDefaultValuesDic.TryAdd(fdv.fieldIndex, fdv);
+            }
+            parameterDefaultValuesDic = new Dictionary<ParameterIndex, Il2CppParameterDefaultValue>(parameterDefaultValues.Length);
+            foreach (var pdv in parameterDefaultValues)
+            {
+                parameterDefaultValuesDic.TryAdd(pdv.parameterIndex, pdv);
+            }
             propertyDefs = Version < 38
                 ? ReadMetadataClassArray<Il2CppPropertyDefinition>(header.propertiesOffset, header.propertiesSize)
                 : ReadMetadataClassArray<Il2CppPropertyDefinition>(header.properties.offset, (int)header.properties.size);
