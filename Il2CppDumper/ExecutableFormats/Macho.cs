@@ -76,7 +76,11 @@ namespace Il2CppDumper
 
         public override ulong MapVATR(ulong addr)
         {
-            var section = sections.First(x => addr >= x.addr && addr <= x.addr + x.size);
+            var section = sections.FirstOrDefault(x => addr >= x.addr && addr <= x.addr + x.size);
+            if (section == null)
+            {
+                return 0;
+            }
             return addr - section.addr + section.offset;
         }
 
@@ -94,7 +98,8 @@ namespace Il2CppDumper
         {
             if (Version < 21)
             {
-                var __mod_init_func = sections.First(x => x.sectname == "__mod_init_func");
+                var __mod_init_func = sections.FirstOrDefault(x => x.sectname == "__mod_init_func");
+                if (__mod_init_func == null) return false;
                 var addrs = ReadClassArray<uint>(__mod_init_func.offset, __mod_init_func.size / 4u);
                 foreach (var a in addrs)
                 {
@@ -134,7 +139,8 @@ namespace Il2CppDumper
             }
             else
             {
-                var __mod_init_func = sections.First(x => x.sectname == "__mod_init_func");
+                var __mod_init_func = sections.FirstOrDefault(x => x.sectname == "__mod_init_func");
+                if (__mod_init_func == null) return false;
                 var addrs = ReadClassArray<uint>(__mod_init_func.offset, __mod_init_func.size / 4u);
                 foreach (var a in addrs)
                 {

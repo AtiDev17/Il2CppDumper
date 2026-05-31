@@ -28,7 +28,12 @@ namespace Il2CppDumper
             {
                 FixedProgramSegment();
             }
-            pt_dynamic = programSegment.First(x => x.p_type == PT_DYNAMIC);
+            pt_dynamic = programSegment.FirstOrDefault(x => x.p_type == PT_DYNAMIC);
+            if (pt_dynamic == null)
+            {
+                Console.WriteLine("ERROR: PT_DYNAMIC segment not found");
+                return;
+            }
             dynamicSection = ReadClassArray<Elf64_Dyn>(pt_dynamic.p_offset, pt_dynamic.p_filesz / 16L);
             if (IsDumped)
             {
@@ -71,7 +76,11 @@ namespace Il2CppDumper
 
         public override ulong MapVATR(ulong addr)
         {
-            var phdr = programSegment.First(x => addr >= x.p_vaddr && addr <= x.p_vaddr + x.p_memsz);
+            var phdr = programSegment.FirstOrDefault(x => addr >= x.p_vaddr && addr <= x.p_vaddr + x.p_memsz);
+            if (phdr == null)
+            {
+                return 0;
+            }
             return addr - phdr.p_vaddr + phdr.p_offset;
         }
 
@@ -227,7 +236,13 @@ namespace Il2CppDumper
                     return true;
                 }
                 //JNI_OnLoad
-                ulong dynstrOffset = MapVATR(dynamicSection.First(x => x.d_tag == DT_STRTAB).d_un);
+            var strtabEntry = dynamicSection.FirstOrDefault(x => x.d_tag == DT_STRTAB);
+            if (strtabEntry == null)
+            {
+                Console.WriteLine("ERROR: DT_STRTAB not found");
+                return false;
+            }
+            ulong dynstrOffset = MapVATR(strtabEntry.d_un);
                 foreach (var symbol in symbolTable)
                 {
                     var name = ReadStringToNull(dynstrOffset + symbol.st_name);

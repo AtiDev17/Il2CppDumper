@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
-
+from ghidra.program.model.symbol import SourceType
 from wasm import WasmLoader
 from wasm.analysis import WasmAnalysis
 from ghidra.util.task import ConsoleTaskMonitor
@@ -20,7 +20,7 @@ processFields = [
 
 functionManager = currentProgram.getFunctionManager()
 progspace = currentProgram.addressFactory.getAddressSpace("ram")
-USER_DEFINED = ghidra.program.model.symbol.SourceType.USER_DEFINED
+USER_DEFINED = SourceType.USER_DEFINED
 
 def get_addr(addr):
 	return progspace.getAddress(addr)
@@ -53,8 +53,8 @@ if "ScriptMethod" in data and "ScriptMethod" in processFields:
 			name = scriptMethod["Name"]
 			set_name(addr, name)
 		else:
-			print "Warning at %s:" % scriptMethod["Name"]
-			print "Symbol %s not found!" % symbolName
+			print("Warning at %s:" % scriptMethod["Name"])
+			print("Symbol %s not found!" % symbolName)
 		monitor.incrementProgress(1)
 
 if "ScriptString" in data and "ScriptString" in processFields:
@@ -97,4 +97,4 @@ if "ScriptMetadataMethod" in data and "ScriptMetadataMethod" in processFields:
 if "Addresses" in data and "Addresses" in processFields:
 	pass
 
-print 'Script finished!'
+print('Script finished!')

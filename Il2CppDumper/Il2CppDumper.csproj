@@ -43,6 +43,7 @@
     <None Update="ghidra_with_struct.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+
     <None Update="ida_py3.py">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

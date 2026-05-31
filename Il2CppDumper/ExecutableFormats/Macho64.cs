@@ -68,7 +68,11 @@ namespace Il2CppDumper
 
         public override ulong MapVATR(ulong addr)
         {
-            var section = sections.First(x => addr >= x.addr && addr <= x.addr + x.size);
+            var section = sections.FirstOrDefault(x => addr >= x.addr && addr <= x.addr + x.size);
+            if (section == null)
+            {
+                return 0;
+            }
             if (section.sectname == "__bss")
             {
                 throw new Exception();
@@ -96,7 +100,8 @@ namespace Il2CppDumper
             var metadataRegistration = 0ul;
             if (Version < 23)
             {
-                var __mod_init_func = sections.First(x => x.sectname == "__mod_init_func");
+                var __mod_init_func = sections.FirstOrDefault(x => x.sectname == "__mod_init_func");
+                if (__mod_init_func == null) return false;
                 var addrs = ReadClassArray<ulong>(__mod_init_func.offset, __mod_init_func.size / 8);
                 foreach (var i in addrs)
                 {
@@ -162,7 +167,8 @@ namespace Il2CppDumper
                  * MOV W3, #0
                  * B sub
                  */
-                var __mod_init_func = sections.First(x => x.sectname == "__mod_init_func");
+                var __mod_init_func = sections.FirstOrDefault(x => x.sectname == "__mod_init_func");
+                if (__mod_init_func == null) return false;
                 var addrs = ReadClassArray<ulong>(__mod_init_func.offset, __mod_init_func.size / 8);
                 foreach (var i in addrs)
                 {
@@ -199,7 +205,8 @@ namespace Il2CppDumper
                  * MOV X2, #0
                  * B sub
                  */
-                var __mod_init_func = sections.First(x => x.sectname == "__mod_init_func");
+                var __mod_init_func = sections.FirstOrDefault(x => x.sectname == "__mod_init_func");
+                if (__mod_init_func == null) return false;
                 var addrs = ReadClassArray<ulong>(__mod_init_func.offset, __mod_init_func.size / 8);
                 foreach (var i in addrs)
                 {
@@ -274,7 +281,8 @@ namespace Il2CppDumper
             if (pointer > vmaddr + 0xFFFFFFFF)
             {
                 var addr = Position;
-                var section = sections.First(x => addr >= x.offset && addr <= x.offset + x.size);
+                var section = sections.FirstOrDefault(x => addr >= x.offset && addr <= x.offset + x.size);
+                if (section == null) return pointer;
                 if (section.sectname == "__const" || section.sectname == "__data")
                 {
                     var rva = pointer - vmaddr;

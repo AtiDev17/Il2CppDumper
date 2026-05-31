@@ -202,7 +202,11 @@ namespace Il2CppDumper
 
         public override ulong MapVATR(ulong addr)
         {
-            var segment = segments.First(x => addr >= x.MemoryOffset && addr <= x.MemoryOffset + x.DecompressedSize);
+            var segment = segments.FirstOrDefault(x => addr >= x.MemoryOffset && addr <= x.MemoryOffset + x.DecompressedSize);
+            if (segment == null)
+            {
+                return 0;
+            }
             return addr - segment.MemoryOffset + segment.FileOffset;
         }
 
