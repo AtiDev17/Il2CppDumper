@@ -6,7 +6,7 @@ Unity il2cpp reverse engineer
 
 * Complete DLL restore (except code), can be used to extract `MonoBehaviour` and `MonoScript`
 * Supports ELF, ELF64, Mach-O, PE, NSO and WASM format
-* Supports Unity 5.3 - 2022.2
+* Supports Unity 5.3 - 2025+
 * Supports generate IDA, Ghidra and Binary Ninja scripts to help them better analyze il2cpp files
 * Supports generate structures header file
 * Supports Android memory dumped `libil2cpp.so` file to bypass protection
@@ -34,13 +34,13 @@ Use [dnSpy](https://github.com/0xd4d/dnSpy), [ILSpy](https://github.com/icsharpc
 
 Can be used to extract Unity `MonoBehaviour` and `MonoScript`, for [UtinyRipper](https://github.com/mafaca/UtinyRipper), [UABE](https://7daystodie.com/forums/showthread.php?22675-Unity-Assets-Bundle-Extractor)
 
-#### ida.py
+#### ida_py3.py
 
-For IDA
+For IDA (Python 3)
 
-#### ida_with_struct.py
+#### ida_with_struct_py3.py
 
-For IDA, read il2cpp.h file and apply structure information in IDA
+For IDA, read il2cpp.h file and apply structure information in IDA (Python 3)
 
 #### il2cpp.h
 
@@ -49,6 +49,10 @@ structure information header file
 #### ghidra.py
 
 For Ghidra
+
+#### ghidra_12_with_struct.py
+
+For Ghidra 12+, read il2cpp.h file and apply structure information
 
 #### Il2CppBinaryNinja
 
@@ -81,9 +85,6 @@ Available options:
 * `DummyDllAddToken`
   * Whether to add token in DummyDll
 
-* `RequireAnyKey`
-  * Whether to press any key to exit at the end
-
 * `ForceIl2CppVersion`, `ForceVersion`
   * If `ForceIl2CppVersion` is `true`, the program will use the version number specified in `ForceVersion` to choose parser for il2cpp binaries (does not affect the choice of metadata parser). This may be useful on some older il2cpp version (e.g. the program may need to use v16 parser on il2cpp v20 (Android) binaries in order to work properly)
 
@@ -92,6 +93,15 @@ Available options:
 
 * `NoRedirectedPointer`
   * Treat pointers in dumped files as unredirected, This option needs to be `true` for files dumped from some devices
+
+* `DisablePlusSearch`
+  * Skip auto-search and require manual CodeRegistration/MetadataRegistration input
+
+* `EscapeJsonValues`
+  * Whether to escape non-ASCII characters in JSON output (default: true)
+
+* `ReplaceHashNames`
+  * List of target/replace name pairs to replace hashed class names in output
 
 ## Common errors
 
