@@ -984,8 +984,13 @@ namespace Il2CppDumper
             return fixName;
         }
 
-        private string RecursionStructInfo(StructInfo info)
+        private string RecursionStructInfo(StructInfo info, int depth = 0)
         {
+            if (depth > 256)
+            {
+                Console.WriteLine($"WARNING: Recursion depth exceeded at {info.TypeName}. Circular or deeply nested type reference detected.");
+                return string.Empty;
+            }
             if (!structCache.Add(info))
             {
                 return string.Empty;
@@ -997,7 +1002,7 @@ namespace Il2CppDumper
             if (info.Parent != null)
             {
                 var parentStructName = info.Parent + "_o";
-                pre.Append(RecursionStructInfo(structInfoWithStructName[parentStructName]));
+                pre.Append(RecursionStructInfo(structInfoWithStructName[parentStructName], depth + 1));
                 sb.Append($"struct {info.TypeName}_Fields : {info.Parent}_Fields {{\n");
                 // C style
                 //sb.Append($"struct {info.TypeName}_Fields {{\n");
@@ -1026,7 +1031,7 @@ namespace Il2CppDumper
                 if (field.IsValueType)
                 {
                     var fieldInfo = structInfoWithStructName[field.FieldTypeName];
-                    pre.Append(RecursionStructInfo(fieldInfo));
+                    pre.Append(RecursionStructInfo(fieldInfo, depth + 1));
                 }
                 if (field.IsCustomType)
                 {
@@ -1127,7 +1132,7 @@ namespace Il2CppDumper
                     if (field.IsValueType)
                     {
                         var fieldInfo = structInfoWithStructName[field.FieldTypeName];
-                        pre.Append(RecursionStructInfo(fieldInfo));
+                        pre.Append(RecursionStructInfo(fieldInfo, depth + 1));
                     }
                     if (field.IsCustomType)
                     {

@@ -39,6 +39,7 @@ namespace Il2CppDumper
         public Il2CppRGCTXDefinition[] rgctxEntries;
 
         private readonly Dictionary<uint, string> stringCache = new();
+        private readonly Dictionary<Type, int> sizeCache = new();
 
         public static int typeIndexSize;
         public static int typeDefinitionIndexSize;
@@ -372,6 +373,8 @@ namespace Il2CppDumper
 
         public int SizeOf(Type type)
         {
+            if (sizeCache.TryGetValue(type, out var cached))
+                return cached;
             var size = 0;
             foreach (var i in type.GetFields())
             {
@@ -417,6 +420,7 @@ namespace Il2CppDumper
                     size += SizeOf(fieldType);
                 }
             }
+            sizeCache[type] = size;
             return size;
         }
 
